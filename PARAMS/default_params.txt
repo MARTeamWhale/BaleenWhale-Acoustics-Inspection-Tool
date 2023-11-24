@@ -11,9 +11,9 @@
 
 # SPECTROGRAM SETTINGS
 #---------------------
-    	WinSize = 0.256		# Spectrogram window size, in seconds
-    	StepSize = 0.032	# Spectrogram time step size, in seconds
-    	NFFT_8kHz = 2048	# Number of points to use in FFT if recording were sampled at 8 kHz (the actual number will be adjusted for the correct sampling rate)
+    WinSize = 0.256	# Spectrogram window size, in seconds
+    StepSize = 0.032	# Spectrogram time step size, in seconds
+    NFFT_8kHz = 2048	# Number of points to use in FFT if recording were sampled at 8 kHz (the actual number will be adjusted for the correct sampling rate)
 
 
 # PLOT PARAMETERS
