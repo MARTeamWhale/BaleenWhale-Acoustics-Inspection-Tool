@@ -1,0 +1,38 @@
+###################################################################################################
+#
+# DEFAULT PARAMETER FILE
+# These parameters will be loaded into the MATLAB autodetection browser/validation tool by default.
+# You can create your own parameter files using this as a template and add them to this folder.
+# Please note these parameters are subject to change in future versions.
+# Compatible with version 20211028
+#
+###################################################################################################
+
+
+# SPECTROGRAM SETTINGS
+#---------------------
+    	WinSize = 0.256		# Spectrogram window size, in seconds
+    	StepSize = 0.032	# Spectrogram time step size, in seconds
+    	NFFT_8kHz = 2048	# Number of points to use in FFT if recording were sampled at 8 kHz (the actual number will be adjusted for the correct sampling rate)
+
+
+# PLOT PARAMETERS
+#----------------
+    TSpanDefault = 6 		# Time span of the viewing window at the base zoom level
+    FMaxDefault = 500  		# Upper frequency limit at the base zoom level
+    TPanFactor = 0.75  		# Factor by which to step forward or back in time when panning, relative to the time span of the current view
+    TZoomFactor = 2  		# Factor by which to increase the time span of the viewing window when "zooming out" in time
+    FZoomFactor = 2  		# Factor by which to increase upper frequency limit when "zooming out" in frequency
+    DefaultColormap = bone	# Name of the colormap to use on startup (see user manual for a list)
+
+
+# MARKER PARAMETERS
+#------------------
+    LineWidth = 2  			# Width of the marker edge lines
+    FaceAlpha = 0.05  			# Transparency of the inside of the marker box. 0 is fully transparent (invisible), 1 is opaque.
+    StandardFRange = [0, 500]  		# Frequency limits of call marker bounding boxes
+    Color_DetectedFocal = [0.5, 0, 0]  	# Color of box around the detected call in focus, specified as an array of RGB values in the range 0-1
+    Color_DetectedOther = [0, 0, 0]  	# Color of boxes around detected calls not in focus, specified as an array of RGB values in the range 0-1
+    Color_MissedDefinite = auto  	# Color of boxes around definite missed calls, specified as an array of RGB values in the range 0-1 OR the string 'auto'
+    Color_MissedPotential =  auto 	# Color of boxes around potential missed calls, specified as an array of RGB values in the range 0-1 OR the string 'auto'
+    Color_Annotations = auto  		# Color of general annotation boxes, specified as an array of RGB values in the range 0-1 OR the string 'auto'

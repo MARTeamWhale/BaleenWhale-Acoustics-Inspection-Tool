@@ -1,0 +1,8 @@
+# MATLAB autosave files
+*.asv
+
+# Microsoft Office temporary files
+~$*
+
+# DEV folder
+DEV/**
