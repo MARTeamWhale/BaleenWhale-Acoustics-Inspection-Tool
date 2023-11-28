@@ -15,7 +15,7 @@ function var = readParam(filestr, varname, validation_fcns)
 
     % read variable string
     varstr_raw = char(regexp(filestr, strrep(param_regex,'VAR',varname), 'match'));
-    varstr_num = regexp(varstr_raw, '[\d.-]+', 'match');
+    varstr_num = regexp(varstr_raw, '[\d.-]+|NaN', 'match');
 
     % check what kind of variable it is
     if ~isempty(varstr_num)

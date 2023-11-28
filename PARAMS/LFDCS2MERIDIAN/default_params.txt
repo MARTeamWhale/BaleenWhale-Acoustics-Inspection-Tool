@@ -1,0 +1,19 @@
+###################################################################################################
+#
+# PARAMETER FILE for LFDCS2MERIDIAN
+# These parameters define filters that control which detections in an LFDCS autodetections CSV file
+# are imported when running LFDCS2MERIDIAN.
+# Compatible with version [IN PROGRESS]
+#
+###################################################################################################
+
+
+# SPECIES AND CALL TYPE CODES
+# ---------------------------
+    ManualSpeciesCodes = [9999, -9999, 0, -32767] 	# Include these species codes that were assigned by user in the LFDCS viewer. Set to NaN to ignore.
+    AutoCallTypes = [5, 6, 7, 8, 9] 			# Include these call type codes that were auto-determined by LFDCS. Set to NaN to ignore.
+
+# DATE AND TIME RANGE
+# -------------------
+    StartDateTime = NaN 				# Limit detections to ones that occur after this date and time. Syntax is [YYYY, MM, DD, hh, mm, ss]. Set to NaN to ignore.
+    StopDateTime = NaN 					# Limit detections to ones that occur before this date and time. Syntax is [YYYY, MM, DD, hh, mm, ss]. Set to NaN to ignore.

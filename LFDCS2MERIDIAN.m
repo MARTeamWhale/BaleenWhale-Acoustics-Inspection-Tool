@@ -49,7 +49,7 @@ function LFDCS2MERIDIAN(varargin)
 % -------------------------------------------------------------------------
 %
 %   Written by Wilfried Beslin
-%   Last updated May 30, 2022 using MATLAB R2018b
+%   Last updated Nov 28, 2023 using MATLAB R2018b
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DEV NOTES
@@ -58,36 +58,54 @@ function LFDCS2MERIDIAN(varargin)
 % - WARNING! Currently, this script may fail if there are subfolders that
 % contain earlier recordings, as the recordings may be out of order
 
-    % parse input
+    import BWAV_code.utilities.getFileNames
+    import BWAV_code.utilities.readDateTime
+
+    % 1) INITIALIZATION AND INPUT ARGUMENT PARSING ........................
+    disp('Initializing...')
+    
+    % define common variables
+    dtRef = datetime(1970,1,1,0,0,0);
+    
+    % define paths to resource folders
+    rootDir = mfilename('fullpath');
+    [rootDir,~,~] = fileparts(rootDir);
+    resDir = fullfile(rootDir,'BrowserResources');
+    paramsDir = fullfile(rootDir,'PARAMS','LFDCS2MERIDIAN');
+    
+    % parse input args
     p = inputParser;
+    p.addParameter('params','default_params.txt', @(v)ischar(v))
     p.addParameter('input_file', '', @ischar)
     p.addParameter('wav_dir', '', @ischar)
     p.addParameter('output_file', '', @ischar)
-    p.addParameter('sp_codes', [], @isnumeric)  % original default was [9999,0,-32767]; empty selects all
     p.addParameter('wav_subfolders', true, @islogical)
-    
     p.parse(varargin{:})
-    inFilePath = p.Results.input_file;
+
+    paramsFilePath = p.Results.params;
     wavDir = p.Results.wav_dir;
     outFilePath = p.Results.output_file;
-    sp_codes = p.Results.sp_codes;
     search_wav_subfolders = p.Results.wav_subfolders;
-
-    % define common variables
-    dtRef = datetime(1970,1,1,0,0,0);
-
     
-    % 1) GET INPUT ........................................................
+    % get and validate input file paths
     
-    % template MERIDIAN output xlsx
-    browserPath = which('validateMeridianDetections');
-    if isempty(browserPath)
+    %%% parameter file
+    [userParamsDir, paramsFilename, paramsExt] = fileparts(paramsFilePath);
+    if isempty(paramsExt)
+        paramsExt = '.txt';
+    end
+    if isempty(userParamsDir)
+        paramsFilePath = fullfile(paramsDir,[paramsFilename,paramsExt]);
+    end
+    
+    %%% template MERIDIAN output xlsx
+    outTemplatePath = fullfile(resDir,'OutputTemplate.xlsx');
+    if ~isfile(outTemplatePath)
         error('Could not find Detection Browser output template file')
     end
-    [browserDir,~,~] = fileparts(browserPath);
-    outTemplatePath = fullfile(browserDir,'BrowserResources','OutputTemplate.xlsx');
     
-    % LFDCS spreadsheet
+    %%% LFDCS spreadsheet
+    inFilePath = p.Results.input_file;
     if isempty(inFilePath)
         [inFileName,inFileDir] = uigetfile({'*.csv';'*.xlsx'},'Select LFDCS spreadsheet');
         inFilePath = fullfile(inFileDir,inFileName);
@@ -96,7 +114,7 @@ function LFDCS2MERIDIAN(varargin)
         end
     end
     
-    % WAV folder
+    %%% WAV folder
     if isempty(wavDir)
         wavDirRoot = '\\142.2.83.111\teamwhalenas2\MOORED_PAM_DATA';
         wavDir = uigetdir(wavDirRoot,'Select WAV folder');
@@ -106,13 +124,10 @@ function LFDCS2MERIDIAN(varargin)
     end
     
     
-    % 2) GET WAV FILE LIST ................................................
-    disp('Getting WAV file times...')
-    [wavFileNames,~] = BWAV_code.utilities.getFileNames(wavDir, 'wav', search_wav_subfolders);
+    % 2) READ FILTERING PARAMETERS ........................................
+    disp('Reading parameter file...')
+    PARAMS = loadParams(paramsFilePath);
     
-    % extract datetime from WAV files
-    dtWav = BWAV_code.utilities.readDateTime(wavFileNames);
- 
 
     % 3) EXTRACT LFDCS DATA ...............................................
     disp('Extracting LFDCS data...')
@@ -120,19 +135,26 @@ function LFDCS2MERIDIAN(varargin)
     % set number of LFDCS header lines
     LFDCSHeader = 23;
     
-    % set column containing manual species codes
+    % set columns containing manual species codes and auto call type codes
     iColSpecies = 10; %15 for commented XLSX files...
+    iColCallType = 1;
     
     % read LFDCS autodetections file as table
     importOpts = detectImportOptions(inFilePath, 'NumHeaderLines',LFDCSHeader, 'DatetimeType','text');
     tableLFDCS = readtable(inFilePath, importOpts);
     
-    % truncate table to include only entries of interest
-    if ~isempty(sp_codes)
-        rowsInclude = ismember(tableLFDCS{:,iColSpecies},sp_codes);
+    % truncate table to include only the species and call type codes of
+    % interest
+    %%% manual species codes
+    if ~isnan(PARAMS.ManualSpeciesCodes)
+        rowsInclude = ismember(tableLFDCS{:,iColSpecies},PARAMS.ManualSpeciesCodes);
         tableLFDCS = tableLFDCS(rowsInclude,:);
     end
-    n = height(tableLFDCS);
+    %%% auto call type codes
+    if ~isnan(PARAMS.AutoCallTypes)
+        rowsInclude = ismember(tableLFDCS{:,iColCallType},PARAMS.AutoCallTypes);
+        tableLFDCS = tableLFDCS(rowsInclude,:);
+    end
     
     % get absolute detection times based on time type
     iColStartTime = 2;
@@ -154,6 +176,44 @@ function LFDCS2MERIDIAN(varargin)
         det_end_absolute = det_start_absolute + seconds(tableLFDCS{:,iColDuration});
     end
     
+    % truncate table to include only detections within time period of
+    % interest
+    rowsInclude = det_start_absolute >= PARAMS.StartDateTime & det_end_absolute <= PARAMS.StopDateTime;
+    det_start_absolute = det_start_absolute(rowsInclude);
+    det_end_absolute = det_end_absolute(rowsInclude);
+    tableLFDCS = tableLFDCS(rowsInclude,:);
+    
+    n = height(tableLFDCS);
+    
+    % check detection times to see if Excel has dropped the milliseconds. 
+    % Issue a warning if so.
+    if mean(second(det_start_absolute) - round(second(det_start_absolute)) == 0) > 0.8
+        time_prompt_cell = {...
+            'It appears that the LFDCS detection times have been rounded, likely because the CSV file was opened and saved in Microsoft Excel. This will result in inaccurate bounding boxes when viewing the detections, and may cause further issues for other people using the data.';...
+            'It is STRONGLY RECOMMENDED to use a CSV file that contains the true detection times. If an unaltered backup of the original file is not available, it will have to be recreated using the "export_autodetections" command in LFDCS.';...
+            'Are you sure you wish to convert the current (inaccurate) file anyway?'};
+        time_prompt = sprintf('%s\n\n%s\n\n%s\n', time_prompt_cell{:});
+        time_btn1str = 'Yes, proceed anyway (NOT RECOMMENDED)';
+        time_btn2str = 'No, I will use a better file';
+        usr_opt = questdlg(time_prompt, 'WARNING: Imprecise Detection Times', time_btn1str, time_btn2str, time_btn2str);
+        
+        if strcmp(usr_opt,time_btn2str) || isempty(usr_opt)
+            return
+        end
+    end
+    
+    
+    % 4) GET WAV FILE LIST AND RECORDING TIMES ............................
+    disp('Getting WAV file times...')
+    [wavFileNames,~] = getFileNames(wavDir, 'wav', search_wav_subfolders);
+    
+    % extract datetime from WAV files
+    dtWav = readDateTime(wavFileNames);
+    
+    
+    % 5) ASSIGN WAV FILES TO EACH AUTODETECTION ...........................
+    disp('Finding origin WAV file for each detection...')
+    
     % get WAV file for each detection
     iDetWav = NaN(n,1);
     for ii = 1:n
@@ -167,6 +227,10 @@ function LFDCS2MERIDIAN(varargin)
     % remove entries that have no WAV files
     good_files = ~isnan(iDetWav);
     n_good = sum(good_files);
+    
+    
+    % 6) CREATE OUTPUT ....................................................
+    disp('Writing output...')
     
     % create output table
     outTableHeader = {'FileName','FileStart','SigStart','SigEnd','SigStartDateTime','Class_LFDCS','Class_MATLAB','ReasonForUNK','Comments'};
@@ -187,10 +251,6 @@ function LFDCS2MERIDIAN(varargin)
     tableOut = table(...
         FileName,FileStart,SigStart,SigEnd,SigStartDateTime,Class_LFDCS,Class_MATLAB,ReasonForUNK,Comments,...
         'VariableNames',outTableHeader);
-
-    
-    % 4) CREATE OUTPUT ....................................................
-    disp('Writing output...')
     
     % initialize output file
     if isempty(outFilePath)
@@ -206,4 +266,37 @@ function LFDCS2MERIDIAN(varargin)
     writetable(tableOut,outFilePath,'Sheet','Detected');
     
     disp('Done')
+end
+
+
+% loadParams --------------------------------------------------------------
+function PARAMS = loadParams(paramFile)
+% Reads in program parameters from file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    import BWAV_code.readParam
+
+    % read parameter file as a block of text
+    params_text = fileread(paramFile);
+
+    % initialize output
+    PARAMS = struct;
+    
+    % set parameters
+    PARAMS.ManualSpeciesCodes = readParam(params_text, 'ManualSpeciesCodes', {@(var)validateattributes(var,{'numeric'},{'integer'}), @(var)assert(isnan(var))});
+    PARAMS.AutoCallTypes = readParam(params_text, 'AutoCallTypes', {@(var)validateattributes(var,{'numeric'},{'integer'}), @(var)assert(isnan(var))});
+    PARAMS.StartDateTime = readParam(params_text, 'StartDateTime', {@(var)validateattributes(var,{'numeric'},{'numel',6}), @(var)assert(isnan(var))});
+    PARAMS.StopDateTime = readParam(params_text, 'StopDateTime', {@(var)validateattributes(var,{'numeric'},{'numel',6}), @(var)assert(isnan(var))});
+    
+    % change time parameters to datetime Infs if they are NaNs
+    if isnan(PARAMS.StartDateTime)
+        PARAMS.StartDateTime = datetime('-Inf');
+    else
+        PARAMS.StartDateTime = datetime(PARAMS.StartDateTime);
+    end
+    if isnan(PARAMS.StopDateTime)
+        PARAMS.StopDateTime = datetime('Inf');
+    else
+        PARAMS.StopDateTime = datetime(PARAMS.StopDateTime);
+    end
 end
