@@ -2,7 +2,7 @@
 %
 % function "validateMeridianDetections"
 %   Written by Wilfried Beslin
-%   Last updated Oct 28, 2021 using MATLAB R2018b
+%   Last updated Nov 27, 2023 using MATLAB R2018b
 %
 %   Description:
 %   Allows a user to browse through and validate spectrograms of potential 
@@ -904,7 +904,7 @@ function PLOT = initializePlotElements(haMain,haHidden)
     PLOT.linePlayback = matlab.graphics.GraphicsPlaceholder;
     
     % Initialize highlight lines
-    PLOT.highlight = BrowserClasses.MarkerHighlight(haMain);
+    PLOT.highlight = BWAV_code.MarkerHighlight(haMain);
  
     
     % HIDDEN ..............................................................

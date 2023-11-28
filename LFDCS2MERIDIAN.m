@@ -108,10 +108,10 @@ function LFDCS2MERIDIAN(varargin)
     
     % 2) GET WAV FILE LIST ................................................
     disp('Getting WAV file times...')
-    [wavFileNames,~] = Utilities.getFileNames(wavDir, 'wav', search_wav_subfolders);
+    [wavFileNames,~] = BWAV_code.utilities.getFileNames(wavDir, 'wav', search_wav_subfolders);
     
     % extract datetime from WAV files
-    dtWav = Utilities.readDateTime(wavFileNames);
+    dtWav = BWAV_code.utilities.readDateTime(wavFileNames);
  
 
     % 3) EXTRACT LFDCS DATA ...............................................
