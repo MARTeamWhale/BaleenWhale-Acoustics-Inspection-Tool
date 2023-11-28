@@ -19,6 +19,10 @@ function LFDCS2MERIDIAN(varargin)
 %
 %   INPUT ARGUMENTS (optional Name-Value pairs)
 %   -----------------------------------------------------------------------
+%   params -> name or path of parameter to use. The parameter file for this
+%       function defines some filtering variables that decide which
+%       detections will be included in the converted spreadsheet.
+%
 %   input_file -> path of the input LFDCS autodetetions spreadsheet. May be 
 %       CSV or XLSX. If not specified, user is prompted to select file.
 %
@@ -28,20 +32,6 @@ function LFDCS2MERIDIAN(varargin)
 %
 %   output_file -> path in which to write the output MERIDIAN-style XLSX 
 %       spreadsheet. If not specified, user is prompted to save the file.
-%
-%   sp_codes -> vector of numeric LFDCS validated species codes to keep in 
-%       the converted spreadsheet. These should be limited to the 
-%       following codes:
-%           9999    (correct)
-%           -9999   (incorrect)
-%           0       (unknown)
-%           -32767  (unclassified)
-%       The converted spreadsheet will only retain detections with a manual 
-%       validation code that corresponds to one of the entries in the list. 
-%       For example, set this to [9999, 0] to only keep correct and unknown
-%       calls. The converted spreadsheet will also translate these numeric 
-%       codes into strings. If this list is empty, then all detections will
-%       be retained (default behaviour)
 %   
 %   wav_subfolders -> True/False value specifying whether to search for
 %       audio files within any subfolders that may exist in the root audio
