@@ -106,8 +106,7 @@ function LFDCS2MERIDIAN(varargin)
     
     %%% WAV folder
     if isempty(wavDir)
-        wavDirRoot = '\\142.2.83.111\teamwhalenas2\MOORED_PAM_DATA';
-        wavDir = uigetdir(wavDirRoot,'Select WAV folder');
+        wavDir = uigetdir(rootDir,'Select WAV folder');
         if isnumeric(wavDir)
             return
         end
