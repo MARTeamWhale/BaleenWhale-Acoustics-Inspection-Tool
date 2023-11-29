@@ -65,7 +65,7 @@ function LFDCS2MERIDIAN(varargin)
     
     % parse input args
     p = inputParser;
-    p.addParameter('params','default_params.txt', @(v)ischar(v))
+    p.addParameter('params','default_params.txt', @ischar)
     p.addParameter('input_file', '', @ischar)
     p.addParameter('wav_dir', '', @ischar)
     p.addParameter('output_file', '', @ischar)
