@@ -41,16 +41,11 @@ end
 
 %% blue -------------------------------------------------------------------
 function bl = blue(m)
-% function "blue" taken from the Toothed Whale Detector project
+% function "blue" taken from the Toothed Whale Detector project, with
+% updates. Original was created by Melissa Soldevilla and was part of the
+% Triton project.
 %
-%   Last updated presumably Sep. 23, 2006 by Melissa Soldevilla
-%   (Added to TWD by Wilfried Beslin on Dec. 3, 2019)
-%
-%   Note that this is a Triton file. Apart from the rebranded header and
-%   removal of what I assume is an automatic timestamp and author tracker
-%   (relating to "CVS"), this file is unmodified.
-%
-%   ORIGINAL HEADER:
+%   ORIGINAL TRITON HEADER:
 %BLUE    Blue-tone color map.
 %   BLUE(M) returns an M-by-3 matrix containing a "blue" colormap.
 %   BLUE, by itself, is the same length as the current colormap.
@@ -69,7 +64,18 @@ function bl = blue(m)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    if nargin < 1, m = size(get(gcf,'colormap'),1); end
+    if nargin < 1
+        % this part has been updated to prevent the creation of figure
+        % windows if none exist. The code is from "hot.m".
+        f = get(groot,'CurrentFigure');
+        if isempty(f)
+            m = size(get(groot,'DefaultFigureColormap'),1);
+        else
+            m = size(f.Colormap,1);
+        end
+        % original "blue" line:
+        %m = size(get(gcf,'colormap'),1);
+    end
     n = fix(1/3*m);
 
     r = [zeros(2*n,1); (1:m-2*n)'/(m-2*n)];
