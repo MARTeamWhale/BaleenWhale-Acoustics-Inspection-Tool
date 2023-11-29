@@ -1,17 +1,17 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 
-% function "extract_LFDCS_detections"
-%   Written by Wilfried Beslin
-%   Last updated Nov 29, 2023 using MATLAB R2018b
+function extract_LFDCS_detections(varargin)
 %
-% DESCRIPTION:
 %   Saves clips and/or spectrograms of LFDCS detections.
 %
-% SYNTAX:
+%   SYNTAX
+%   -----------------------------------------------------------------------
 %   extract_LFDCS_detections()
 %   extract_LFDCS_detections(Name,Value)
+%   -----------------------------------------------------------------------
 %
-% OPTIONAL INPUT ARGUMENTS (Name-Value pairs):
+%
+%   INPUT ARGUMENTS (optional Name-Value pairs)
+%   -----------------------------------------------------------------------
+%   "params" - name or path of parameter file to use
 %   .......................................................................
 %   "input_file" - string specifying path to input file, which should be
 %       CSV file exported from LFDCS. If not specified, user will be
@@ -25,57 +25,36 @@
 %       files within which calls were detected in LFDCS. If not specified,
 %       user will be prompted to choose a folder.
 %   .......................................................................
-%   "channel" - integer specifying which channel of the audio files to use.
-%       Default is 1.
-%   .......................................................................
-%   "save_clips" - True/False value specifying if clips should be saved or
-%       not. Default is true.
-%   .......................................................................
-%   "save_spectrograms" - True/False value specifying if spectrogram images
-%       should be saved or not. If "save_clips" is false but
-%       "save_spectrograms" is true, the function will search the output
-%       folder for existing clips. If clips exist, they will be used to
-%       create the spectrograms (in this case no audio folder is needed). 
-%       If no clips are found, they will be created (so in this case an
-%       audio folder is required), but they will not be saved. Default is
-%       true.
-%   .......................................................................
-%   "snippet_dur" - Number specifying the duration of the snippets
-%       containing the calls, in seconds. WARNING: if the duration is too 
-%       small, detections may be clipped or absent altogether. Default is 
-%       4.
-%   .......................................................................
-%   "spec_f_max" - Upper frequency limit of spectrograms, in Hertz. 
-%       Default is 400.
-%   .......................................................................
-%   "spec_colormap" - String specifying the colormap for the spectrogram.
-%       Must be one of the MATLAB built-in colormaps (see MATLAB
-%       documentation of "colormap" for a list). Default is "parula" 
-%       (blue/green/yellow).
-%   .......................................................................
-%   "spec_fig_size" - Width and height of output spectrogram images, in 
-%       pixels. Default is [960, 540].
-%   .......................................................................
-%   "recursive_search" - True/false value specifying if subfolders within
-%       the root audio folder should be searched for files too. Default is
-%       true.
-%   .......................................................................
 %   "overwrite" - True/false value specifying whether or not existing clips 
 %       or spectrograms in the output folder should be overwritten. Default
 %       is false.
 %
 %
-%   NOTES:
-%       - LFDCS detection times are not completely accurate. Some upcalls
-%       may be offset by anywhere from a few milliseconds to > 1 second.
-%       The reason is not entirely known. LFDCS detection times appear to
-%       be rounded to the nearest second, but that alone is not enough to
-%       account for the offset in every call.
+%   NOTES
+%   -----------------------------------------------------------------------
+%   - If the "SaveClips" parameter is false but "SaveSpecs" is true, the
+%   function will search the output folder for existing clips. If clips
+%   exist, they will be used to create the spectrograms (in this case no
+%   audio folder is needed). If no clips are found, then an input audio
+%   folder is required.
+%
+%   - Upcalls may not always appear where they should in the clips or
+%   spectrogram images. There can be two reasons for this which can occur
+%   at the same time. Reason 1) The source CSV file may have been saved in
+%   Microsoft Excel, which often causes the milliseconds in the detection
+%   times to be stripped away, reducing their precision. This problem can
+%   be resolved by recreating the CSV file in LFDCS and avoiding saving in
+%   Excel. Reason 2) LFDCS detection times do not always match up with the
+%   times in which the detections actually occur in the WAV files. The
+%   reason for this is not entirely known - it may be a bug in LFDCS. There
+%   is currently no easy solution to this problem.
+%   -----------------------------------------------------------------------
+%
+%   Written by Wilfried Beslin
+%   Last updated Nov 29, 2023 using MATLAB R2018b
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-function extract_LFDCS_detections(varargin)
 
     % 1) INPUT PARSING ....................................................
 
