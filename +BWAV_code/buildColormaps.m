@@ -40,10 +40,10 @@ end
 
 
 %% blue -------------------------------------------------------------------
-function bl = blue(m)
+function bl = blue()
 % function "blue" taken from the Toothed Whale Detector project, with
-% updates. Original was created by Melissa Soldevilla and was part of the
-% Triton project.
+% modifications. Original was created by Melissa Soldevilla and was part of
+% the Scripps Triton project.
 %
 %   ORIGINAL TRITON HEADER:
 %BLUE    Blue-tone color map.
@@ -64,24 +64,23 @@ function bl = blue(m)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    if nargin < 1
-        % this part has been updated to prevent the creation of figure
-        % windows if none exist. The code is from "hot.m".
-        f = get(groot,'CurrentFigure');
-        if isempty(f)
-            m = size(get(groot,'DefaultFigureColormap'),1);
-        else
-            m = size(f.Colormap,1);
-        end
-        % original "blue" line:
-        %m = size(get(gcf,'colormap'),1);
+    % this part has been updated to prevent the creation of figure windows
+    % if none exist. The code is from "hot.m". Note that it also used to be
+    % within a conditional statement, which has been removed here.
+    f = get(groot,'CurrentFigure');
+    if isempty(f)
+        m = size(get(groot,'DefaultFigureColormap'),1);
+    else
+        m = size(f.Colormap,1);
     end
+    % original "blue" line:
+    %m = size(get(gcf,'colormap'),1);
+    
     n = fix(1/3*m);
 
     r = [zeros(2*n,1); (1:m-2*n)'/(m-2*n)];
     g = [zeros(n,1); (1:n)'/n; ones(m-2*n,1)];
     b = [(1:n)'/n; ones(m-n,1)];
-
 
     bl = [r g b];
 end
