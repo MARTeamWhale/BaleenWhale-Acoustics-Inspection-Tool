@@ -28,6 +28,7 @@ function extract_LFDCS_detections(varargin)
 %   "overwrite" - True/false value specifying whether or not existing clips 
 %       or spectrograms in the output folder should be overwritten. Default
 %       is false.
+%   -----------------------------------------------------------------------
 %
 %
 %   NOTES
@@ -39,15 +40,17 @@ function extract_LFDCS_detections(varargin)
 %   folder is required.
 %
 %   - Upcalls may not always appear where they should in the clips or
-%   spectrogram images. There can be two reasons for this which can occur
-%   at the same time. Reason 1) The source CSV file may have been saved in
-%   Microsoft Excel, which often causes the milliseconds in the detection
-%   times to be stripped away, reducing their precision. This problem can
-%   be resolved by recreating the CSV file in LFDCS and avoiding saving in
-%   Excel. Reason 2) LFDCS detection times do not always match up with the
-%   times in which the detections actually occur in the WAV files. The
-%   reason for this is not entirely known - it may be a bug in LFDCS. There
-%   is currently no easy solution to this problem.
+%   spectrogram images. There can be two reasons for this, which can occur
+%   at the same time:
+%       -- Reason 1) The source CSV file may have been saved in Microsoft
+%       Excel, which often causes the milliseconds in the detection times
+%       to be stripped away, reducing their precision. This problem can be
+%       resolved by recreating the CSV file in LFDCS and avoiding saving in
+%       Excel. A warning is issued if this problem is detected.
+%       -- Reason 2) LFDCS detection times do not always match up with the
+%       times in which the detections actually occur in the WAV files. The
+%       reason for this is not entirely known - it may be a bug in LFDCS.
+%       There is currently no easy solution to this problem.
 %   -----------------------------------------------------------------------
 %
 %   Written by Wilfried Beslin
@@ -151,6 +154,10 @@ function extract_LFDCS_detections(varargin)
         % read LFDCS file
         disp('Processing LFDCS detections...')
         [data, deployment] = read_LFDCS_file(input_file_path, audio_dir, PARAMS.RecursiveSearch);
+        if isempty(data)
+            disp('Cancelling')
+            return
+        end
         num_detections = height(data);
     end
     
@@ -293,6 +300,25 @@ function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, recurs
     import_opts = detectImportOptions(LFDCS_file_path,'NumHeaderLines',LFDCS_header_rows);
     LFDCS_table = readtable(LFDCS_file_path,import_opts);
     num_detections = height(LFDCS_table);
+    
+    % check detection times to see if Excel has dropped the milliseconds. 
+    % Issue a warning if so.
+    if mean(LFDCS_table.Var2 - round(LFDCS_table.Var2) == 0) > 0.8
+        time_prompt_cell = {...
+            'It appears that the LFDCS detection times have been rounded, likely because the CSV file was opened and saved in Microsoft Excel. This will cause the position of the detections within the clips or spectrograms to be slightly inaccurate.';...
+            'It is STRONGLY RECOMMENDED to use a CSV file that contains the true detection times. If an unaltered backup of the original file is not available, it will have to be recreated using the "export_autodetections" command in LFDCS.';...
+            'Are you sure you wish to extract and/or plot detections using the current (inaccurate) file anyway?'};
+        time_prompt = sprintf('%s\n\n%s\n\n%s\n', time_prompt_cell{:});
+        time_btn1str = 'Yes, proceed anyway (NOT RECOMMENDED)';
+        time_btn2str = 'No, I will use a better file';
+        usr_opt = questdlg(time_prompt, 'WARNING: Imprecise Detection Times', time_btn1str, time_btn2str, time_btn2str);
+        
+        if strcmp(usr_opt,time_btn2str) || isempty(usr_opt)
+            data = [];
+            deployment = [];
+            return
+        end
+    end
     
     % get WAV file for each detection
     disp('Getting WAV file times...')
