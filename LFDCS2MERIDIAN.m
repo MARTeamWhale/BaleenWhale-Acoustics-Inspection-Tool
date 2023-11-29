@@ -59,9 +59,9 @@ function LFDCS2MERIDIAN(varargin)
     
     % define paths to resource folders
     rootDir = mfilename('fullpath');
-    [rootDir,~,~] = fileparts(rootDir);
+    [rootDir,scriptName,~] = fileparts(rootDir);
     resDir = fullfile(rootDir,'BrowserResources');
-    paramsDir = fullfile(rootDir,'PARAMS','LFDCS2MERIDIAN');
+    paramsDir = fullfile(rootDir,'PARAMS',scriptName);
     
     % parse input args
     p = inputParser;
