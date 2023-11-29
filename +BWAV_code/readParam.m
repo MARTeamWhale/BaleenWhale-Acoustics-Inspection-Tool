@@ -15,12 +15,16 @@ function var = readParam(filestr, varname, validation_fcns)
 
     % read variable string
     varstr_raw = char(regexp(filestr, strrep(param_regex,'VAR',varname), 'match'));
-    varstr_num = regexp(varstr_raw, '[\d.-]+|NaN', 'match');
+    varstr_num = regexpi(varstr_raw, '[\d.-]+|NaN', 'match');
+    varstr_bool = regexpi(varstr_raw, 'true|false', 'match');
 
     % check what kind of variable it is
     if ~isempty(varstr_num)
         % numeric inputs
         var = str2double(varstr_num);
+    elseif ~isempty(varstr_bool)
+        % logical inputs
+        var = strcmpi(varstr_bool, 'true');
     elseif ~isempty(varstr_raw) && ~strcmp(varstr_raw,'[]')
         % char input
         var = varstr_raw;

@@ -2,7 +2,7 @@
 % 
 % function "extract_LFDCS_detections"
 %   Written by Wilfried Beslin
-%   Last updated Oct 12, 2022 using MATLAB R2018b
+%   Last updated Nov 29, 2023 using MATLAB R2018b
 %
 % DESCRIPTION:
 %   Saves clips and/or spectrograms of LFDCS detections.
@@ -77,68 +77,55 @@
 
 function extract_LFDCS_detections(varargin)
 
+    % 1) INPUT PARSING ....................................................
+
+    % define paths to resource folders
+    rootDir = mfilename('fullpath');
+    [rootDir,scriptName,~] = fileparts(rootDir);
+    %resDir = fullfile(rootDir,'BrowserResources');
+    paramsDir = fullfile(rootDir,'PARAMS',scriptName);
+
     % parse input
     p = inputParser;
     
-    p.addParameter('input_file', '')
-    p.addParameter('output_dir', '')
-    p.addParameter('audio_dir', '')
-    p.addParameter('channel', 1)
-    p.addParameter('save_clips', true)
-    p.addParameter('save_spectrograms', true)
-    p.addParameter('snippet_dur', 4)
-    p.addParameter('spec_f_max', 400)
-    p.addParameter('spec_colormap', 'parula')
-    p.addParameter('spec_fig_size', [960,540])
-    p.addParameter('recursive_search', true)
+    p.addParameter('params', 'default_params.txt', @ischar)
+    p.addParameter('input_file', '', @ischar)
+    p.addParameter('output_dir', '', @ischar)
+    p.addParameter('audio_dir', '', @ischar)
     p.addParameter('overwrite', false)
     
     p.parse(varargin{:})
+    paramsFilePath = p.Results.params;
     input_file_path = p.Results.input_file;
     usr_output_dir = p.Results.output_dir;
     audio_dir = p.Results.audio_dir;
-    channel = p.Results.channel;
-    do_save_clips = p.Results.save_clips;
-    do_save_specs = p.Results.save_spectrograms;
-    snippet_dur = p.Results.snippet_dur;
-    spec_f_max = p.Results.spec_f_max;
-    spec_colmap = p.Results.spec_colormap;
-    spec_fig_size = p.Results.spec_fig_size;
-    recursive_search = p.Results.recursive_search;
     overwrite = p.Results.overwrite;
     
-    % validate colormaps
-    colmap_list = {...
-        'parula',...
-        'jet',...
-        'hsv',...
-        'hot',...
-        'cool',...
-        'spring',...
-        'summer',...
-        'autumn',...
-        'winter',...
-        'gray',...
-        'bone',...
-        'copper',...
-        'pink'};
-    spec_colmap = validatestring(spec_colmap, colmap_list);
+    % import parameters
+    [userParamsDir, paramsFilename, paramsExt] = fileparts(paramsFilePath);
+    if isempty(paramsExt)
+        paramsExt = '.txt';
+    end
+    if isempty(userParamsDir)
+        paramsFilePath = fullfile(paramsDir,[paramsFilename,paramsExt]);
+    end
+    PARAMS = loadParams(paramsFilePath);
     
     
-    % 1) INITIALIZE BASED ON PARAMETERS ...................................
+    % 2) INITIALIZE BASED ON PARAMETERS ...................................
     
     % process file and folder paths based on clip and spectrogram options
-    specs_only = do_save_specs && ~do_save_clips;
+    specs_only = PARAMS.SaveSpecs && ~PARAMS.SaveClips;
     specs_from_clips = false;
     
-    if ~do_save_clips && ~do_save_specs
+    if ~PARAMS.SaveClips && ~PARAMS.SaveSpecs
         disp('Nothing to do!')
         return
         
     elseif specs_only
         % process output folder first and check if clips exist
         disp('Spectrogram processing only; looking for existing clip files to produce spectrograms')
-        [output_folders, existing_clips, existing_specs] = process_output_folders(usr_output_dir, do_save_clips, do_save_specs);
+        [output_folders, existing_clips, existing_specs] = process_output_folders(usr_output_dir, PARAMS.SaveClips, PARAMS.SaveSpecs);
         if isempty(output_folders)
             disp('Cancelling')
             return
@@ -175,7 +162,7 @@ function extract_LFDCS_detections(varargin)
         
         % process output folders if not already done
         if ~specs_only
-            [output_folders, existing_clips, existing_specs] = process_output_folders(usr_output_dir, do_save_clips, do_save_specs);
+            [output_folders, existing_clips, existing_specs] = process_output_folders(usr_output_dir, PARAMS.SaveClips, PARAMS.SaveSpecs);
             if isempty(output_folders)
                 disp('Cancelling')
                 return
@@ -184,12 +171,12 @@ function extract_LFDCS_detections(varargin)
         
         % read LFDCS file
         disp('Processing LFDCS detections...')
-        [data, deployment] = read_LFDCS_file(input_file_path, audio_dir, recursive_search);
+        [data, deployment] = read_LFDCS_file(input_file_path, audio_dir, PARAMS.RecursiveSearch);
         num_detections = height(data);
     end
     
     
-    % 2) PROCESSING .......................................................
+    % 3) PROCESSING .......................................................
     
     % loop through each detection and save a clip and/or spectrogram
     previous_rec = '';
@@ -232,10 +219,10 @@ function extract_LFDCS_detections(varargin)
 
                 % isolate detection
                 initial_det_range = [det_call_start, det_call_end];
-                [x_det, fs] = isolateDetection(current_rec_file, rec_info, channel, initial_det_range, snippet_dur);
+                [x_det, fs] = isolateDetection(current_rec_file, rec_info, PARAMS.Channel, initial_det_range, PARAMS.SnippetDur);
 
                 % save clip if specified
-                if do_save_clips
+                if PARAMS.SaveClips
                     if ~(isfile(clip_file_path) && ~overwrite)
                         disp('    Saving clip')
                         audiowrite(clip_file_path, x_det, fs, 'BitsPerSample',rec_info.BitsPerSample);
@@ -247,11 +234,11 @@ function extract_LFDCS_detections(varargin)
             end
 
             % process spectrogram if specified
-            if do_save_specs
+            if PARAMS.SaveSpecs
                 if ~(isfile(spec_file_path) && ~overwrite)
                     disp('    Saving spectrogram')
-                    fig = make_spectrogram(x_det, fs, spec_colmap, spec_f_max, out_name);
-                    Utilities.saveFigInPixels(fig, spec_file_path, spec_fig_size)
+                    fig = make_spectrogram(x_det, fs, PARAMS.SpecColorMap, PARAMS.SpecMaxFreq, out_name);
+                    Utilities.saveFigInPixels(fig, spec_file_path, PARAMS.SpecFigSize)
                     close(fig)
                 else
                     disp('    Spectrogram already exists')
@@ -275,6 +262,40 @@ function extract_LFDCS_detections(varargin)
         writetable(error_logs(has_error,:), error_file_path)
     end
     disp('Done')
+end
+
+
+% loadParams --------------------------------------------------------------
+function PARAMS = loadParams(paramFile)
+% Reads in program parameters from file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    import BWAV_code.readParam
+    import BWAV_code.buildColormaps
+
+    % read parameter file as a block of text
+    params_text = fileread(paramFile);
+
+    % initialize output
+    PARAMS = struct;
+    
+    % set parameters
+    PARAMS.Channel = readParam(params_text, 'Channel', {@(var)validateattributes(var,{'numeric'},{'scalar','positive','integer'})});
+    PARAMS.RecursiveSearch = readParam(params_text, 'RecursiveSearch', {@(var)validateattributes(var,{'logical'},{'scalar'})});
+    PARAMS.SaveClips = readParam(params_text, 'SaveClips', {@(var)validateattributes(var,{'logical'},{'scalar'})});
+    PARAMS.SaveSpecs = readParam(params_text, 'SaveSpecs', {@(var)validateattributes(var,{'logical'},{'scalar'})});
+    PARAMS.SnippetDur = readParam(params_text, 'SnippetDur', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
+    PARAMS.SpecMaxFreq = readParam(params_text, 'SpecMaxFreq', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
+    PARAMS.SpecColorMap = readParam(params_text, 'SpecColorMap', {@(var)validateattributes(var,{'char'},{'row'})});
+    PARAMS.SpecFigSize = readParam(params_text, 'SpecFigSize', {@(var)validateattributes(var,{'numeric'},{'numel',2,'integer','positive'})});
+    
+    % assign colormap matrix
+    cmaps = buildColormaps();
+    try
+        PARAMS.SpecColorMap = feval(cmaps.(PARAMS.SpecColorMap));
+    catch
+        error('Invalid colormap "%s"', PARAMS.SpecColorMap)
+    end
 end
 
 
