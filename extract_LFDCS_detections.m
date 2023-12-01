@@ -31,6 +31,11 @@ function extract_LFDCS_detections(varargin)
 %   -----------------------------------------------------------------------
 %
 %
+%   DEPENDENCIES
+%       MUCA.io.saveFig
+%       MUCA.time.readDateTime
+%
+%
 %   NOTES
 %   -----------------------------------------------------------------------
 %   - If the "SaveClips" parameter is false but "SaveSpecs" is true, the
@@ -54,10 +59,12 @@ function extract_LFDCS_detections(varargin)
 %   -----------------------------------------------------------------------
 %
 %   Written by Wilfried Beslin
-%   Last updated Nov 29, 2023 using MATLAB R2018b
+%   Last updated 2023-12-01 using MATLAB R2018b
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+    import MUCA.io.saveFig
 
     % 1) INPUT PARSING ....................................................
 
@@ -224,7 +231,7 @@ function extract_LFDCS_detections(varargin)
                 if ~(isfile(spec_file_path) && ~overwrite)
                     disp('    Saving spectrogram')
                     fig = make_spectrogram(x_det, fs, PARAMS.SpecColorMap, PARAMS.SpecMaxFreq, out_name);
-                    Utilities.saveFigInPixels(fig, spec_file_path, PARAMS.SpecFigSize)
+                    saveFig(fig, spec_file_path, PARAMS.SpecFigSize, 'pixels');
                     close(fig)
                 else
                     disp('    Spectrogram already exists')
@@ -290,6 +297,8 @@ function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, recurs
 % Extract relevant info from CSV file exported by LFDCS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    import MUCA.time.readDateTime
+
     dt_ref = datetime(1970,1,1,0,0,0);
     LFDCS_header_rows = 23;
     start_time_col = 2;
@@ -323,7 +332,7 @@ function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, recurs
     % get WAV file for each detection
     disp('Getting WAV file times...')
     [rec_file_names,rec_file_paths] = Utilities.getFileNames(audio_dir, 'wav', recursive_search);
-    rec_times = Utilities.readDateTime(rec_file_names);
+    rec_times = readDateTime(rec_file_names);
     %rec_times_secs = seconds(rec_times - dt_ref);
     
     %%% sort files in case they are out of order
