@@ -38,8 +38,13 @@ function LFDCS2MERIDIAN(varargin)
 %       folder. Default is true.
 % -------------------------------------------------------------------------
 %
+% DEPENDENCIES:
+%   MUCA.filepaths.listFiles
+%   MUCA.time.readDateTime
+%
+%
 %   Written by Wilfried Beslin
-%   Last updated Nov 28, 2023 using MATLAB R2018b
+%   Last updated 2023-12-01 using MATLAB R2018b
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DEV NOTES
@@ -48,8 +53,8 @@ function LFDCS2MERIDIAN(varargin)
 % - WARNING! Currently, this script may fail if there are subfolders that
 % contain earlier recordings, as the recordings may be out of order
 
-    import BWAV_code.utilities.getFileNames
-    import BWAV_code.utilities.readDateTime
+    import MUCA.filepaths.listFiles
+    import MUCA.time.readDateTime
 
     % 1) INITIALIZATION AND INPUT ARGUMENT PARSING ........................
     disp('Initializing...')
@@ -194,7 +199,7 @@ function LFDCS2MERIDIAN(varargin)
     
     % 4) GET WAV FILE LIST AND RECORDING TIMES ............................
     disp('Getting WAV file times...')
-    [wavFileNames,~] = getFileNames(wavDir, 'wav', search_wav_subfolders);
+    [~, wavFileNames] = listFiles(wavDir, 'wav', 'Recursive',search_wav_subfolders);
     
     % extract datetime from WAV files
     dtWav = readDateTime(wavFileNames);
