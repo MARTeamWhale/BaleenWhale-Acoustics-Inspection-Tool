@@ -394,7 +394,9 @@ function PARAMS = loadSetParams(paramFile)
     PARAMS = struct;
     
     % set channel number
-    PARAMS.channel = readParam(params_text, 'ChannelNumber', {@(var)validateattributes(var,{'numeric'},{'positive','integer','scalar'}), @(var)assert(strcmpi(var,'prompt'))});
+    PARAMS.channel = struct();
+    PARAMS.channel.UserChannelNumber = readParam(params_text, 'ChannelNumber', {@(var)validateattributes(var,{'numeric'},{'positive','integer','scalar'}), @(var)assert(strcmpi(var,'prompt'))});
+    PARAMS.channel.ActualChannelNumber = [];
     
     % set spectrogram settings
     PARAMS.spec = struct;
@@ -938,50 +940,49 @@ function processNewDet()
         [x,Fs] = audioread(wavPath);
         
         % isolate proper channel
-        settingChannel = true;
-        while settingChannel
-            try
-                x = x(:,PARAMS.channel);
-                settingChannel = false;
-            catch
-                % get or correct the channel number
-                numChannels = size(x,2);
-                if ischar(PARAMS.channel) && strcmpi(PARAMS.channel,'prompt')
-                    % process 'prompt' option
-                    if numChannels == 1
-                        % if only one channel, just use first channel
-                        PARAMS.channel = 1;
-                    else
-                        % if multiple channels, prompt user
-                        channelListStr = cellstr(num2str((1:numChannels)'));
-                        channelOpt = listdlg(...
-                            'ListString', channelListStr,...
-                            'PromptString', 'Please select audio channel:',...
-                            'SelectionMode', 'single',...
-                            'ListSize', [150,120]);
-                        if isempty(channelOpt)
-                            error('No channel selected; aborting')
-                        else
-                            PARAMS.channel = channelOpt;
-                        end
-                    end
-                elseif isnumeric(PARAMS.channel)
-                    % process numeric channel option
-                    if numChannels == 1
-                        % if only one channel, just use first channel
-                        warning('Channel number %d was specified, but recording only has one channel', PARAMS.channel)
-                        PARAMS.channel = 1;
-                    else
-                        % if there are multiple channels and the specified
-                        % channel number is invalid, then cancel operation
-                        error('Channel number %d was specified, but recording has %d channels; aborting', PARAMS.channel, numChannels)
-                    end
+        if isempty(PARAMS.channel.ActualChannelNumber)
+            % set channel number based on input parameters
+            numChannels = size(x,2);
+            if ischar(PARAMS.channel.UserChannelNumber) && strcmpi(PARAMS.channel.UserChannelNumber,'prompt')
+                % process 'prompt' option
+                if numChannels == 1
+                    % if only one channel, just use first channel
+                    PARAMS.channel.ActualChannelNumber = 1;
                 else
-                    % process unrecognized channel option
-                    error('Invalid channel option')
+                    % if multiple channels, prompt user
+                    channelListStr = cellstr(num2str((1:numChannels)'));
+                    channelPromptOpt = listdlg(...
+                        'ListString', channelListStr,...
+                        'PromptString', 'Please select audio channel:',...
+                        'SelectionMode', 'single',...
+                        'ListSize', [150,120]);
+                    if isempty(channelPromptOpt)
+                        abort('No channel selected; aborting')
+                    else
+                        PARAMS.channel.ActualChannelNumber = channelPromptOpt;
+                    end
                 end
+            elseif isnumeric(PARAMS.channel.UserChannelNumber)
+                % process numeric channel option
+                if PARAMS.channel.UserChannelNumber <= numChannels
+                    PARAMS.channel.ActualChannelNumber = PARAMS.channel.UserChannelNumber;
+                elseif numChannels == 1
+                    % if user channel number is too high but there is only
+                    % one channel, just use first channel
+                    warning('Channel number %d was specified, but recording only has one channel', PARAMS.channel.UserChannelNumber)
+                    PARAMS.channel.ActualChannelNumber = 1;
+                else
+                    % if user channel number is too high and there are
+                    % multiple channels, then cancel operation
+                    abort(sprintf('Channel number %d was specified, but recording only has %d channels; aborting', PARAMS.channel.UserChannelNumber, numChannels));
+                end
+            else
+                % process unrecognized channel option
+                abort('Invalid channel option')
             end
+            fprintf('Isolating channel %d of %d\n', PARAMS.channel.ActualChannelNumber, numChannels);
         end
+        x = x(:,PARAMS.channel.ActualChannelNumber);
 
         % remove DC offset
         x = x - mean(x);
@@ -1028,6 +1029,12 @@ function processNewDet()
     
     % reset loading string
     PLOT.textLoading.String = 'Updating...';
+    
+    % NESTED FUNCTIONS ....................................................
+    function abort(errMsg)
+        close(UI.fig)
+        error(errMsg)
+    end
 end
 
 % updatePlot --------------------------------------------------------------
