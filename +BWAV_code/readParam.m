@@ -45,6 +45,6 @@ function var = readParam(filestr, varname, validation_fcns)
         end
     end
     if ~valid_input
-        error('The value of parameter "%s" is invalid or could not be read', varstr_raw)
+        error('The value of parameter "%s" is invalid or could not be read', varname)
     end
 end
