@@ -9,6 +9,11 @@
 ###################################################################################################
 
 
+# AUDIO CHANNEL
+#--------------
+    ChannelNumber = prompt	# Channel number to use if recordings have multiple channels; specify 'prompt' to set the channel interactively
+
+
 # SPECTROGRAM SETTINGS
 #---------------------
     WinSize = 0.256	# Spectrogram window size, in seconds
