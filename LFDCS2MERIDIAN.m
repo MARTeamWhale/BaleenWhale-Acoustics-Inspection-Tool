@@ -44,7 +44,7 @@ function LFDCS2MERIDIAN(varargin)
 %
 %
 %   Written by Wilfried Beslin
-%   Last updated 2023-12-01 using MATLAB R2018b
+%   Last updated 2023-12-05 using MATLAB R2018b
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DEV NOTES
@@ -63,38 +63,27 @@ function LFDCS2MERIDIAN(varargin)
     dtRef = datetime(1970,1,1,0,0,0);
     
     % define paths to resource folders and files
-    rootDir = mfilename('fullpath');
-    [rootDir,scriptName,~] = fileparts(rootDir);
-    paramsDir = fullfile(rootDir,'PARAMS',scriptName);
+    scriptPath = mfilename('fullpath');
+    [rootDir,~,~] = fileparts(scriptPath);
     outputTemplatePath = fullfile(rootDir,'+BWAV_code','OutputTemplate.xlsx');
     
     % parse input args
     p = inputParser;
-    p.addParameter('params','default_params.txt', @ischar)
+    p.addParameter('params','', @ischar)
     p.addParameter('input_file', '', @ischar)
     p.addParameter('wav_dir', '', @ischar)
     p.addParameter('output_file', '', @ischar)
     p.addParameter('wav_subfolders', true, @islogical)
     p.parse(varargin{:})
 
-    paramsFilePath = p.Results.params;
+    paramsFileInput = p.Results.params;
     wavDir = p.Results.wav_dir;
     outputFilePath = p.Results.output_file;
     search_wav_subfolders = p.Results.wav_subfolders;
     
     % get and validate input file paths
     
-    %%% parameter file
-    [userParamsDir, paramsFilename, paramsExt] = fileparts(paramsFilePath);
-    if isempty(paramsExt)
-        paramsExt = '.txt';
-    end
-    if isempty(userParamsDir)
-        paramsFilePath = fullfile(paramsDir,[paramsFilename,paramsExt]);
-    end
-    
     %%% template MERIDIAN output xlsx
-    
     if ~isfile(outputTemplatePath)
         error('Could not find Detection Browser output template file')
     end
@@ -120,7 +109,7 @@ function LFDCS2MERIDIAN(varargin)
     
     % 2) READ FILTERING PARAMETERS ........................................
     disp('Reading parameter file...')
-    PARAMS = loadParams(paramsFilePath);
+    PARAMS = loadParams(paramsFileInput);
     
 
     % 3) EXTRACT LFDCS DATA ...............................................
@@ -264,23 +253,26 @@ end
 
 
 % loadParams --------------------------------------------------------------
-function PARAMS = loadParams(paramFile)
+function PARAMS = loadParams(paramFileInput)
 % Reads in program parameters from file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    import BWAV_code.processParamFile
     import BWAV_code.readParam
 
     % read parameter file as a block of text
-    params_text = fileread(paramFile);
+    scriptPath = mfilename('fullpath');
+    [rootDir,scriptName,~] = fileparts(scriptPath);
+    paramsText = processParamFile(paramFileInput, rootDir, scriptName);
 
     % initialize output
     PARAMS = struct;
     
     % set parameters
-    PARAMS.ManualSpeciesCodes = readParam(params_text, 'ManualSpeciesCodes', {@(var)validateattributes(var,{'numeric'},{'integer'}), @(var)assert(isnan(var))});
-    PARAMS.AutoCallTypes = readParam(params_text, 'AutoCallTypes', {@(var)validateattributes(var,{'numeric'},{'integer'}), @(var)assert(isnan(var))});
-    PARAMS.StartDateTime = readParam(params_text, 'StartDateTime', {@(var)validateattributes(var,{'numeric'},{'numel',6}), @(var)assert(isnan(var))});
-    PARAMS.StopDateTime = readParam(params_text, 'StopDateTime', {@(var)validateattributes(var,{'numeric'},{'numel',6}), @(var)assert(isnan(var))});
+    PARAMS.ManualSpeciesCodes = readParam(paramsText, 'ManualSpeciesCodes', {@(var)validateattributes(var,{'numeric'},{'integer'}), @(var)assert(isnan(var))});
+    PARAMS.AutoCallTypes = readParam(paramsText, 'AutoCallTypes', {@(var)validateattributes(var,{'numeric'},{'integer'}), @(var)assert(isnan(var))});
+    PARAMS.StartDateTime = readParam(paramsText, 'StartDateTime', {@(var)validateattributes(var,{'numeric'},{'numel',6}), @(var)assert(isnan(var))});
+    PARAMS.StopDateTime = readParam(paramsText, 'StopDateTime', {@(var)validateattributes(var,{'numeric'},{'numel',6}), @(var)assert(isnan(var))});
     
     % change time parameters to datetime Infs if they are NaNs
     if isnan(PARAMS.StartDateTime)
