@@ -145,7 +145,7 @@ function validateMeridianDetections(varargin)
     end
     
     % set static parameters
-    PARAMS = loadSetParams(paramsFilePath);
+    PARAMS = loadSetParams(paramsFilePath,paramsDir);
     
     % initialize program data
     DATA = initializeData(OUTPUT,PARAMS,wavDir);
@@ -379,7 +379,7 @@ function [OUTPUT,cancel] = readInput(inFilePath,outputTemplatePath)
 end
 
 % loadSetParams -----------------------------------------------------------
-function PARAMS = loadSetParams(paramFile)
+function PARAMS = loadSetParams(paramFilePath,paramsDir)
 % Reads in program parameters from file (some may also be hard-coded)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -387,7 +387,13 @@ function PARAMS = loadSetParams(paramFile)
     import BWAV_code.buildColormaps
 
     % read parameter file as a block of text
-    params_text = fileread(paramFile);
+    if startsWith(paramFilePath,paramsDir)
+        paramFileStr = erase(paramFilePath,[paramsDir,filesep]);
+    else
+        paramFileStr = paramFilePath;
+    end
+    fprintf('Loading parameter file "%s"\n', paramFileStr);
+    params_text = fileread(paramFilePath);
 
     % initialize output
     PARAMS = struct;
