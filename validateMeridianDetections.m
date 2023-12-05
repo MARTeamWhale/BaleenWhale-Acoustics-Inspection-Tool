@@ -94,11 +94,11 @@ function validateMeridianDetections(varargin)
     
     disp('Initializing...')
     
-    % define paths to resource folders
+    % define paths to resource folders and files
     rootDir = mfilename('fullpath');
     [rootDir,scriptName,~] = fileparts(rootDir);
-    resDir = fullfile(rootDir,'BrowserResources');
     paramsDir = fullfile(rootDir,'PARAMS',scriptName);
+    outputTemplatePath = fullfile(rootDir,'+BWAV_code','OutputTemplate.xlsx');
     
     % parse input
     p = inputParser;
@@ -139,7 +139,7 @@ function validateMeridianDetections(varargin)
     end
     
     % read input file
-    [OUTPUT,cancel] = readInput(inFilePath,resDir);
+    [OUTPUT,cancel] = readInput(inFilePath,outputTemplatePath);
     if cancel
         return
     end
@@ -175,7 +175,7 @@ end
 
 %% INITIALIZATION FUNCTIONS ===============================================
 % readInput ---------------------------------------------------------------
-function [OUTPUT,cancel] = readInput(inFilePath,resDir)
+function [OUTPUT,cancel] = readInput(inFilePath,outputTemplatePath)
 % Reads input file, determines its type, and setup output as appropriate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -184,7 +184,7 @@ function [OUTPUT,cancel] = readInput(inFilePath,resDir)
     [~,~,inFileExt] = fileparts(inFilePath);
     switch inFileExt
         case '.csv'
-            [OUTPUT,cancel] = parseInitialCSV(inFilePath,resDir);
+            [OUTPUT,cancel] = parseInitialCSV(inFilePath,outputTemplatePath);
         case '.xlsx'
             OUTPUT = parseWorkingXLSX(inFilePath);
             cancel = false;
@@ -218,7 +218,7 @@ function [OUTPUT,cancel] = readInput(inFilePath,resDir)
     
     % NESTED FUNCTIONS 
     % parse Initial CSV ...................................................
-    function [OUTPUT,cancel] = parseInitialCSV(inFilePath,resDir)
+    function [OUTPUT,cancel] = parseInitialCSV(inFilePath,outputTemplatePath)
     % Processes initial MERIDIAN CSV file
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
@@ -234,20 +234,20 @@ function [OUTPUT,cancel] = readInput(inFilePath,resDir)
         assert(all(ismember(colsInput,cols)),'File columns not recognized')
         
         % create output file and variable
-        [outFileName,outFileDir] = uiputfile('*.xlsx','Specify output file');
-        outFilePath = fullfile(outFileDir,outFileName);
-        if ischar(outFileName)
+        [outputFileName,outputFileDir] = uiputfile('*.xlsx','Specify output file');
+        outputFilePath = fullfile(outputFileDir,outputFileName);
+        if ischar(outputFileName)
             % delete existing file if it exists
-            if isfile(outFilePath)
-                delete(outFilePath);
+            if isfile(outputFilePath)
+                delete(outputFilePath);
             end
             
             % create output file and variable
-            [tableDetections,tableMissedCalls,tableAnnotations] = createOutput(inTable,outFilePath,resDir);
+            [tableDetections,tableMissedCalls,tableAnnotations] = createOutput(inTable,outputFilePath,outputTemplatePath);
             OUTPUT.tableDetections = tableDetections;
             OUTPUT.tableMissedCalls = tableMissedCalls;
             OUTPUT.tableAnnotations = tableAnnotations;
-            OUTPUT.path = outFilePath;
+            OUTPUT.path = outputFilePath;
             cancel = false;
         else
             % cancel if user doesn't specify path
@@ -305,7 +305,7 @@ function [OUTPUT,cancel] = readInput(inFilePath,resDir)
     end
     
     % createOutput ........................................................
-    function [tableDetections,tableMissedCalls,tableAnnotations] = createOutput(inTable,outFilePath,resDir)
+    function [tableDetections,tableMissedCalls,tableAnnotations] = createOutput(inTable,outputFilePath,outputTemplatePath)
     % initializes output variables and creates the file
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
@@ -315,8 +315,7 @@ function [OUTPUT,cancel] = readInput(inFilePath,resDir)
         dtRef = datetime(1970,1,1,0,0,0);
     
         % copy template output file to specified output path
-        templateFilePath = fullfile(resDir,'OutputTemplate.xlsx');
-        [copyOK,copyMsg] = copyfile(templateFilePath,outFilePath);
+        [copyOK,copyMsg] = copyfile(outputTemplatePath,outputFilePath);
         if ~copyOK
             error('Could not create output file:\n%s',copyMsg)
         end
@@ -348,13 +347,13 @@ function [OUTPUT,cancel] = readInput(inFilePath,resDir)
         % create Detected table
         tableDetections = table(FileName,FileStart,SigStart,SigEnd,SigStartDateTime,Class_LFDCS,Class_MATLAB,ReasonForUNK,Comments,...
             'VariableNames',cols);
-        writetable(tableDetections,outFilePath,'Sheet','Detected');
+        writetable(tableDetections,outputFilePath,'Sheet','Detected');
         
         % initialize Undetected table
-        tableMissedCalls = readtable(outFilePath,'Sheet','Undetected');
+        tableMissedCalls = readtable(outputFilePath,'Sheet','Undetected');
         
         % initialize Annotations table
-        tableAnnotations = readtable(outFilePath,'Sheet','Annotations');
+        tableAnnotations = readtable(outputFilePath,'Sheet','Annotations');
     end
 
     % forceTableCellStr ...................................................

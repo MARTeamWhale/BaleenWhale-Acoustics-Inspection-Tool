@@ -62,11 +62,11 @@ function LFDCS2MERIDIAN(varargin)
     % define common variables
     dtRef = datetime(1970,1,1,0,0,0);
     
-    % define paths to resource folders
+    % define paths to resource folders and files
     rootDir = mfilename('fullpath');
     [rootDir,scriptName,~] = fileparts(rootDir);
-    resDir = fullfile(rootDir,'BrowserResources');
     paramsDir = fullfile(rootDir,'PARAMS',scriptName);
+    outputTemplatePath = fullfile(rootDir,'+BWAV_code','OutputTemplate.xlsx');
     
     % parse input args
     p = inputParser;
@@ -79,7 +79,7 @@ function LFDCS2MERIDIAN(varargin)
 
     paramsFilePath = p.Results.params;
     wavDir = p.Results.wav_dir;
-    outFilePath = p.Results.output_file;
+    outputFilePath = p.Results.output_file;
     search_wav_subfolders = p.Results.wav_subfolders;
     
     % get and validate input file paths
@@ -94,8 +94,8 @@ function LFDCS2MERIDIAN(varargin)
     end
     
     %%% template MERIDIAN output xlsx
-    outTemplatePath = fullfile(resDir,'OutputTemplate.xlsx');
-    if ~isfile(outTemplatePath)
+    
+    if ~isfile(outputTemplatePath)
         error('Could not find Detection Browser output template file')
     end
     
@@ -247,17 +247,17 @@ function LFDCS2MERIDIAN(varargin)
         'VariableNames',outTableHeader);
     
     % initialize output file
-    if isempty(outFilePath)
-        [outFileName,outFileDir] = uiputfile('*.xlsx','Save output file');
-        outFilePath = fullfile(outFileDir,outFileName);
+    if isempty(outputFilePath)
+        [outputFileName,outputFileDir] = uiputfile('*.xlsx','Save output file');
+        outputFilePath = fullfile(outputFileDir,outputFileName);
     end
-    [copyOK,copyMsg] = copyfile(outTemplatePath,outFilePath);
+    [copyOK,copyMsg] = copyfile(outputTemplatePath,outputFilePath);
     if ~copyOK
         error('Could not create output file:\n%s',copyMsg)
     end
     
     % update output table
-    writetable(tableOut,outFilePath,'Sheet','Detected');
+    writetable(tableOut,outputFilePath,'Sheet','Detected');
     
     disp('Done')
 end
