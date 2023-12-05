@@ -2,7 +2,7 @@
 %
 % function "validateMeridianDetections"
 %   Written by Wilfried Beslin
-%   Last updated Dec 4, 2023 using MATLAB R2018b
+%   Last updated Dec 5, 2023 using MATLAB R2018b
 %
 %   Description:
 %   Allows a user to browse through and validate spectrograms of potential 
