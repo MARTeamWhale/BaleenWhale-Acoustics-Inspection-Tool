@@ -1,7 +1,12 @@
 function [paramFileText, usingDefault] = processParamFile(paramFileInputRaw, rootDir, scriptName)
 % Parse an input parameter file name or path and try to locate the file. If
 % the file is found, return the file contents.
+%
+%   Written by Wilfried Beslin
+%   Last updated 2023-12-05 using MATLAB R2018b
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
     % set path to PARAMS folder
     paramsDir = fullfile(rootDir, 'PARAMS', scriptName);
@@ -13,6 +18,7 @@ function [paramFileText, usingDefault] = processParamFile(paramFileInputRaw, roo
         % get default params
         defaultFileFullName = ['DefaultParams.',scriptName,'.txt'];
         paramFileInitPath = fullfile(paramsDir, defaultFileFullName);
+        assert(isfile(paramFileInitPath), sprintf('Could not find default parameter file "%s"',defaultFileFullName))
     else
         % parse user input
 

@@ -59,7 +59,7 @@ function extract_LFDCS_detections(varargin)
 %   -----------------------------------------------------------------------
 %
 %   Written by Wilfried Beslin
-%   Last updated 2023-12-01 using MATLAB R2018b
+%   Last updated 2023-12-05 using MATLAB R2018b
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -68,37 +68,23 @@ function extract_LFDCS_detections(varargin)
 
     % 1) INPUT PARSING ....................................................
 
-    % define paths to resource folders
-    rootDir = mfilename('fullpath');
-    [rootDir,scriptName,~] = fileparts(rootDir);
-    %resDir = fullfile(rootDir,'BrowserResources');
-    paramsDir = fullfile(rootDir,'PARAMS',scriptName);
-
-    % parse input
     p = inputParser;
     
-    p.addParameter('params', 'default_params.txt', @ischar)
+    p.addParameter('params', '', @ischar)
     p.addParameter('input_file', '', @ischar)
     p.addParameter('output_dir', '', @ischar)
     p.addParameter('audio_dir', '', @ischar)
     p.addParameter('overwrite', false)
     
     p.parse(varargin{:})
-    paramsFilePath = p.Results.params;
+    paramsFileInput = p.Results.params;
     input_file_path = p.Results.input_file;
     usr_output_dir = p.Results.output_dir;
     audio_dir = p.Results.audio_dir;
     overwrite = p.Results.overwrite;
     
     % import parameters
-    [userParamsDir, paramsFilename, paramsExt] = fileparts(paramsFilePath);
-    if isempty(paramsExt)
-        paramsExt = '.txt';
-    end
-    if isempty(userParamsDir)
-        paramsFilePath = fullfile(paramsDir,[paramsFilename,paramsExt]);
-    end
-    PARAMS = loadParams(paramsFilePath);
+    PARAMS = loadParams(paramsFileInput);
     
     
     % 2) INITIALIZE BASED ON PARAMETERS ...................................
@@ -259,28 +245,31 @@ end
 
 
 % loadParams --------------------------------------------------------------
-function PARAMS = loadParams(paramFile)
+function PARAMS = loadParams(paramFileInput)
 % Reads in program parameters from file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    import BWAV_code.processParamFile
     import BWAV_code.readParam
     import BWAV_code.buildColormaps
 
     % read parameter file as a block of text
-    params_text = fileread(paramFile);
+    scriptPath = mfilename('fullpath');
+    [rootDir,scriptName,~] = fileparts(scriptPath);
+    paramsText = processParamFile(paramFileInput, rootDir, scriptName);
 
     % initialize output
     PARAMS = struct;
     
     % set parameters
-    PARAMS.Channel = readParam(params_text, 'Channel', {@(var)validateattributes(var,{'numeric'},{'scalar','positive','integer'})});
-    PARAMS.RecursiveSearch = readParam(params_text, 'RecursiveSearch', {@(var)validateattributes(var,{'logical'},{'scalar'})});
-    PARAMS.SaveClips = readParam(params_text, 'SaveClips', {@(var)validateattributes(var,{'logical'},{'scalar'})});
-    PARAMS.SaveSpecs = readParam(params_text, 'SaveSpecs', {@(var)validateattributes(var,{'logical'},{'scalar'})});
-    PARAMS.SnippetDur = readParam(params_text, 'SnippetDur', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
-    PARAMS.SpecMaxFreq = readParam(params_text, 'SpecMaxFreq', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
-    PARAMS.SpecColorMap = readParam(params_text, 'SpecColorMap', {@(var)validateattributes(var,{'char'},{'row'})});
-    PARAMS.SpecFigSize = readParam(params_text, 'SpecFigSize', {@(var)validateattributes(var,{'numeric'},{'numel',2,'integer','positive'})});
+    PARAMS.Channel = readParam(paramsText, 'Channel', {@(var)validateattributes(var,{'numeric'},{'scalar','positive','integer'})});
+    PARAMS.RecursiveSearch = readParam(paramsText, 'RecursiveSearch', {@(var)validateattributes(var,{'logical'},{'scalar'})});
+    PARAMS.SaveClips = readParam(paramsText, 'SaveClips', {@(var)validateattributes(var,{'logical'},{'scalar'})});
+    PARAMS.SaveSpecs = readParam(paramsText, 'SaveSpecs', {@(var)validateattributes(var,{'logical'},{'scalar'})});
+    PARAMS.SnippetDur = readParam(paramsText, 'SnippetDur', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
+    PARAMS.SpecMaxFreq = readParam(paramsText, 'SpecMaxFreq', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
+    PARAMS.SpecColorMap = readParam(paramsText, 'SpecColorMap', {@(var)validateattributes(var,{'char'},{'row'})});
+    PARAMS.SpecFigSize = readParam(paramsText, 'SpecFigSize', {@(var)validateattributes(var,{'numeric'},{'numel',2,'integer','positive'})});
     
     % assign colormap matrix
     cmaps = buildColormaps();
