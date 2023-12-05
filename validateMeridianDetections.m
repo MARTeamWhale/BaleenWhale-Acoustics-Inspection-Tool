@@ -95,29 +95,21 @@ function validateMeridianDetections(varargin)
     disp('Initializing...')
     
     % define paths to resource folders and files
-    rootDir = mfilename('fullpath');
-    [rootDir,scriptName,~] = fileparts(rootDir);
-    paramsDir = fullfile(rootDir,'PARAMS',scriptName);
+    scriptPath = mfilename('fullpath');
+    [rootDir,~,~] = fileparts(scriptPath);
     outputTemplatePath = fullfile(rootDir,'+BWAV_code','OutputTemplate.xlsx');
     
     % parse input
     p = inputParser;
-    p.addParameter('params','default_params.txt', @(v)ischar(v))
+    p.addParameter('params','', @(v)ischar(v))
     p.addParameter('data_file', '', @(v)ischar(v));
     p.addParameter('audio_folder', '', @(v)ischar(v));
     p.parse(varargin{:})
     
-    %%% process params file
-    paramsFilePath = p.Results.params;
-    [userParamsDir, paramsFilename, paramsExt] = fileparts(paramsFilePath);
-    if isempty(paramsExt)
-        paramsExt = '.txt';
-    end
-    if isempty(userParamsDir)
-        paramsFilePath = fullfile(paramsDir,[paramsFilename,paramsExt]);
-    end
+    %%% process param file input
+    paramFileInput = p.Results.params;
     
-    %%% process data file
+    %%% process data file input
     inFilePath = p.Results.data_file;
     if isempty(inFilePath)
         % prompt user for input spreadsheet file
@@ -128,7 +120,7 @@ function validateMeridianDetections(varargin)
         end
     end
     
-    %%% process audio folder
+    %%% process audio folder input
     wavDir = p.Results.audio_folder;
     if isempty(wavDir)
         % prompt user for WAV folder
@@ -145,7 +137,7 @@ function validateMeridianDetections(varargin)
     end
     
     % set static parameters
-    PARAMS = loadSetParams(paramsFilePath,paramsDir);
+    PARAMS = loadSetParams(paramFileInput);
     
     % initialize program data
     DATA = initializeData(OUTPUT,PARAMS,wavDir);
@@ -379,45 +371,42 @@ function [OUTPUT,cancel] = readInput(inFilePath,outputTemplatePath)
 end
 
 % loadSetParams -----------------------------------------------------------
-function PARAMS = loadSetParams(paramFilePath,paramsDir)
+function PARAMS = loadSetParams(paramFileInput)
 % Reads in program parameters from file (some may also be hard-coded)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     import BWAV_code.readParam
     import BWAV_code.buildColormaps
+    import BWAV_code.processParamFile
 
     % read parameter file as a block of text
-    if startsWith(paramFilePath,paramsDir)
-        paramFileStr = erase(paramFilePath,[paramsDir,filesep]);
-    else
-        paramFileStr = paramFilePath;
-    end
-    fprintf('Loading parameter file "%s"\n', paramFileStr);
-    params_text = fileread(paramFilePath);
+    scriptPath = mfilename('fullpath');
+    [rootDir,scriptName,~] = fileparts(scriptPath);
+    paramsText = processParamFile(paramFileInput, rootDir, scriptName);
 
     % initialize output
     PARAMS = struct;
     
     % set channel number
     PARAMS.channel = struct();
-    PARAMS.channel.UserChannelNumber = readParam(params_text, 'ChannelNumber', {@(var)validateattributes(var,{'numeric'},{'positive','integer','scalar'}), @(var)assert(strcmpi(var,'prompt'))});
+    PARAMS.channel.UserChannelNumber = readParam(paramsText, 'ChannelNumber', {@(var)validateattributes(var,{'numeric'},{'positive','integer','scalar'}), @(var)assert(strcmpi(var,'prompt'))});
     PARAMS.channel.ActualChannelNumber = [];
     
     % set spectrogram settings
     PARAMS.spec = struct;
-    PARAMS.spec.WinSize = readParam(params_text, 'WinSize', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
-    PARAMS.spec.StepSize = readParam(params_text, 'StepSize', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
-    PARAMS.spec.NFFT_8kHz = readParam(params_text, 'NFFT_8kHz', {@(var)validateattributes(var,{'numeric'},{'scalar','positive','integer'})});
+    PARAMS.spec.WinSize = readParam(paramsText, 'WinSize', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
+    PARAMS.spec.StepSize = readParam(paramsText, 'StepSize', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
+    PARAMS.spec.NFFT_8kHz = readParam(paramsText, 'NFFT_8kHz', {@(var)validateattributes(var,{'numeric'},{'scalar','positive','integer'})});
     
     % set plot parameters
     PARAMS.plot = struct();
-    PARAMS.plot.TSpanDefault = readParam(params_text, 'TSpanDefault', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
-    PARAMS.plot.FMaxDefault = readParam(params_text, 'FMaxDefault', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
-    PARAMS.plot.TPanFactor = readParam(params_text, 'TPanFactor', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
-    PARAMS.plot.TZoomFactor = readParam(params_text, 'TZoomFactor', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
-    PARAMS.plot.FZoomFactor = readParam(params_text, 'FZoomFactor', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
+    PARAMS.plot.TSpanDefault = readParam(paramsText, 'TSpanDefault', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
+    PARAMS.plot.FMaxDefault = readParam(paramsText, 'FMaxDefault', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
+    PARAMS.plot.TPanFactor = readParam(paramsText, 'TPanFactor', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
+    PARAMS.plot.TZoomFactor = readParam(paramsText, 'TZoomFactor', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
+    PARAMS.plot.FZoomFactor = readParam(paramsText, 'FZoomFactor', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
     PARAMS.plot.Colormaps = buildColormaps();
-    PARAMS.plot.DefaultColormap = lower(readParam(params_text, 'DefaultColormap', {@(var)validateattributes(var,{'char'},{'vector'})}));
+    PARAMS.plot.DefaultColormap = lower(readParam(paramsText, 'DefaultColormap', {@(var)validateattributes(var,{'char'},{'vector'})}));
     % ensure colormap is valid
     if ~ismember(PARAMS.plot.DefaultColormap,fieldnames(PARAMS.plot.Colormaps))
         bad_colmap = PARAMS.plot.DefaultColormap;
@@ -435,18 +424,18 @@ function PARAMS = loadSetParams(paramFilePath,paramsDir)
     
     % set marker parameters
     PARAMS.markers = struct();
-    PARAMS.markers.LineWidth = readParam(params_text, 'LineWidth', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
-    PARAMS.markers.FaceAlpha = readParam(params_text, 'FaceAlpha', {@(var)validateattributes(var,{'numeric'},{'scalar','nonnegative','<=',1})});
-    PARAMS.markers.StandardFRange = readParam(params_text, 'StandardFRange', {@(var)validateattributes(var,{'numeric'},{'numel',2,'nonnegative','increasing'})});
+    PARAMS.markers.LineWidth = readParam(paramsText, 'LineWidth', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
+    PARAMS.markers.FaceAlpha = readParam(paramsText, 'FaceAlpha', {@(var)validateattributes(var,{'numeric'},{'scalar','nonnegative','<=',1})});
+    PARAMS.markers.StandardFRange = readParam(paramsText, 'StandardFRange', {@(var)validateattributes(var,{'numeric'},{'numel',2,'nonnegative','increasing'})});
     %%% Colors
     PARAMS.markers.Color = struct();
     PARAMS.markers.Color.Detections = zeros(2,3);
-    PARAMS.markers.Color.Detections(1,:) = readParam(params_text, 'Color_DetectedOther', {@(var)validateattributes(var,{'numeric'},{'numel',3,'nonnegative','<=',1})});
-    PARAMS.markers.Color.Detections(2,:) = readParam(params_text, 'Color_DetectedFocal', {@(var)validateattributes(var,{'numeric'},{'numel',3,'nonnegative','<=',1})});
+    PARAMS.markers.Color.Detections(1,:) = readParam(paramsText, 'Color_DetectedOther', {@(var)validateattributes(var,{'numeric'},{'numel',3,'nonnegative','<=',1})});
+    PARAMS.markers.Color.Detections(2,:) = readParam(paramsText, 'Color_DetectedFocal', {@(var)validateattributes(var,{'numeric'},{'numel',3,'nonnegative','<=',1})});
     PARAMS.markers.Color.MissedCalls = zeros(2,3);
-    PARAMS.markers.Color.MissedCalls(1,:) = setAutoColor(readParam(params_text, 'Color_MissedDefinite', {@(var)validateattributes(var,{'numeric'},{'numel',3,'nonnegative','<=',1}),@(var)assert(strcmpi(var,'auto'))}), PARAMS.col.Correct);
-    PARAMS.markers.Color.MissedCalls(2,:) = setAutoColor(readParam(params_text, 'Color_MissedPotential', {@(var)validateattributes(var,{'numeric'},{'numel',3,'nonnegative','<=',1}),@(var)assert(strcmpi(var,'auto'))}), PARAMS.col.Unknown);
-    PARAMS.markers.Color.Annotations = setAutoColor(readParam(params_text, 'Color_Annotations', {@(var)validateattributes(var,{'numeric'},{'numel',3,'nonnegative','<=',1}),@(var)assert(strcmpi(var,'auto'))}), PARAMS.col.Annotations);
+    PARAMS.markers.Color.MissedCalls(1,:) = setAutoColor(readParam(paramsText, 'Color_MissedDefinite', {@(var)validateattributes(var,{'numeric'},{'numel',3,'nonnegative','<=',1}),@(var)assert(strcmpi(var,'auto'))}), PARAMS.col.Correct);
+    PARAMS.markers.Color.MissedCalls(2,:) = setAutoColor(readParam(paramsText, 'Color_MissedPotential', {@(var)validateattributes(var,{'numeric'},{'numel',3,'nonnegative','<=',1}),@(var)assert(strcmpi(var,'auto'))}), PARAMS.col.Unknown);
+    PARAMS.markers.Color.Annotations = setAutoColor(readParam(paramsText, 'Color_Annotations', {@(var)validateattributes(var,{'numeric'},{'numel',3,'nonnegative','<=',1}),@(var)assert(strcmpi(var,'auto'))}), PARAMS.col.Annotations);
     %%% Frequency range type
     PARAMS.markers.FRangeType = struct();
     PARAMS.markers.FRangeType.Detections = 'standard';

@@ -1,4 +1,4 @@
-function [paramFileText, usingDefault] = processParamFile(paramFileInputRaw, scriptName, rootDir)
+function [paramFileText, usingDefault] = processParamFile(paramFileInputRaw, rootDir, scriptName)
 % Parse an input parameter file name or path and try to locate the file. If
 % the file is found, return the file contents.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -11,8 +11,8 @@ function [paramFileText, usingDefault] = processParamFile(paramFileInputRaw, scr
     usingDefault = isempty(paramFileInputRaw);
     if usingDefault
         % get default params
-        defaultFileName = ['DefaultParams.',scriptName,'.txt'];
-        paramFileInitPath = fullfile(paramsDir, defaultFileName);
+        defaultFileFullName = ['DefaultParams.',scriptName,'.txt'];
+        paramFileInitPath = fullfile(paramsDir, defaultFileFullName);
     else
         % parse user input
 
@@ -28,7 +28,7 @@ function [paramFileText, usingDefault] = processParamFile(paramFileInputRaw, scr
         end
 
         % set initial file path
-        paramFileInitPath = fullfile(paramFileInitDir, paramFileName, paramFileExt);
+        paramFileInitPath = fullfile(paramFileInitDir, [paramFileName,paramFileExt]);
 
         % check if file exists - if it doesn't, begin loop to look for it
         while ~isfile(paramFileInitPath)
@@ -36,7 +36,7 @@ function [paramFileText, usingDefault] = processParamFile(paramFileInputRaw, scr
             % folder
             if isempty(paramFileInitDir)
                 paramFileInitDir = paramsDir;
-                paramFileInitPath = fullfile(paramFileInitDir, paramFileName, paramFileExt);
+                paramFileInitPath = fullfile(paramFileInitDir, [paramFileName,paramFileExt]);
             else
                 % if file cannot be found, then throw an error
                 error('Could not find parameter file "%s"', paramFileInput)
@@ -48,7 +48,8 @@ function [paramFileText, usingDefault] = processParamFile(paramFileInputRaw, scr
     % get the full path of the paramfile
     paramFileInfo = dir(paramFileInitPath);
     paramFileDir = paramFileInfo.folder;
-    paramFilePath = fullfile(paramFileDir, paramFileName, paramFileExt);
+    paramFileFullName = paramFileInfo.name;
+    paramFilePath = fullfile(paramFileDir, paramFileFullName);
 
     % load the parameters
     if usingDefault
