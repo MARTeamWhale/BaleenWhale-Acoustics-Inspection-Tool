@@ -1,4 +1,4 @@
-function LFDCS2MERIDIAN(varargin)
+function BAIT_convertLFDCSTable(varargin)
 %
 %   Convert LFDCS autodetection results into xlsx file compatible with 
 %   MERIDIAN detection validator program.
@@ -12,8 +12,8 @@ function LFDCS2MERIDIAN(varargin)
 %
 %   SYNTAX
 %   -----------------------------------------------------------------------
-%   LFDCS2MERIDIAN
-%   LFDCS2MERIDIAN(Name,Value)
+%   BAIT_convertLFDCSTable
+%   BAIT_convertLFDCSTable(Name,Value)
 %   -----------------------------------------------------------------------
 %
 %

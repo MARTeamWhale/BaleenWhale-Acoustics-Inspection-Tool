@@ -9,7 +9,7 @@
 %   right whale upcalls (or other whale calls of interest) detected by the 
 %   MERIDIAN neural network. It is also possible to use this for LFDCS
 %   detections by converting the LFDCS autodetections outputs into
-%   MERIDIAN-style spreadsheets using the LFDCS2MERIDIAN script.
+%   MERIDIAN-style spreadsheets using the BAIT_convertLFDCSTable script.
 %   Also supports marking of undetected (missed) calls and general 
 %   annotations.
 %
