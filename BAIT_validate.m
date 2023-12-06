@@ -99,11 +99,6 @@ function BAIT_validate(varargin)
     
     disp('Initializing...')
     
-    % define paths to resource folders and files
-    scriptPath = mfilename('fullpath');
-    [rootDir,~,~] = fileparts(scriptPath);
-    outputTemplatePath = fullfile(rootDir,'+BAIT','OutputTemplate.xlsx');
-    
     % parse input
     p = inputParser;
     p.addParameter('params','', @(v)ischar(v))
@@ -118,7 +113,7 @@ function BAIT_validate(varargin)
     inFilePath = p.Results.data_file;
     if isempty(inFilePath)
         % prompt user for input spreadsheet file
-        [inFile,inDir] = uigetfile('*.csv;*.xlsx','Select initial or working spreadsheet file (BAIT format)');
+        [inFile,inDir] = uigetfile('*.xlsx','Select detections spreadsheet file (BAIT format)');
         inFilePath = fullfile(inDir,inFile);
         if isnumeric(inFile)
             return
@@ -136,10 +131,7 @@ function BAIT_validate(varargin)
     end
     
     % read input file
-    [OUTPUT,cancel] = readInput(inFilePath,outputTemplatePath);
-    if cancel
-        return
-    end
+    OUTPUT = readInput(inFilePath);
     
     % set static parameters
     PARAMS = loadSetParams(paramFileInput);
@@ -172,22 +164,13 @@ end
 
 %% INITIALIZATION FUNCTIONS ===============================================
 % readInput ---------------------------------------------------------------
-function [OUTPUT,cancel] = readInput(inFilePath,outputTemplatePath)
-% Reads input file, determines its type, and setup output as appropriate
+function OUTPUT = readInput(inFilePath)
+% Reads input file and sets up output data struct as appropriate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    % determine type of input spreadsheet (initial CSV or processed XLSX)
-    % based on file extension
     [~,~,inFileExt] = fileparts(inFilePath);
-    switch inFileExt
-        case '.csv'
-            [OUTPUT,cancel] = parseInitialCSV(inFilePath,outputTemplatePath);
-        case '.xlsx'
-            OUTPUT = parseWorkingXLSX(inFilePath);
-            cancel = false;
-        otherwise
-            error('Expected input file to be a CSV or XLSX file')
-    end
+    assert(strcmpi(inFileExt, '.xlsx'), 'Expected input file to be a XLSX file')
+    OUTPUT = parseXLSX(inFilePath);
     
     % Make sure undetected table has correct field types if it's empty
     if isempty(OUTPUT.tableMissedCalls)
@@ -214,47 +197,9 @@ function [OUTPUT,cancel] = readInput(inFilePath,outputTemplatePath)
     
     
     % NESTED FUNCTIONS 
-    % parse Initial CSV ...................................................
-    function [OUTPUT,cancel] = parseInitialCSV(inFilePath,outputTemplatePath)
-    % Processes initial CSV file
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-        % initialize output struct
-        OUTPUT = struct();
-        
-        % read input file
-        inTable = readtable(inFilePath);
-        
-        % check columns to make sure file is as expected
-        cols = {'filename','det_start','det_stop','threshold','file_start','label','start','stop','fmin','fmax','val'};
-        colsInput = inTable.Properties.VariableNames;
-        assert(all(ismember(colsInput,cols)),'File columns not recognized')
-        
-        % create output file and variable
-        [outputFileName,outputFileDir] = uiputfile('*.xlsx','Specify output file');
-        outputFilePath = fullfile(outputFileDir,outputFileName);
-        if ischar(outputFileName)
-            % delete existing file if it exists
-            if isfile(outputFilePath)
-                delete(outputFilePath);
-            end
-            
-            % create output file and variable
-            [tableDetections,tableMissedCalls,tableAnnotations] = createOutput(inTable,outputFilePath,outputTemplatePath);
-            OUTPUT.tableDetections = tableDetections;
-            OUTPUT.tableMissedCalls = tableMissedCalls;
-            OUTPUT.tableAnnotations = tableAnnotations;
-            OUTPUT.path = outputFilePath;
-            cancel = false;
-        else
-            % cancel if user doesn't specify path
-            cancel = true;
-        end
-    end
-
     % parseWorkingXLSX ....................................................
-    function OUTPUT = parseWorkingXLSX(inFilePath)
-    % Processes existing XLSX file
+    function OUTPUT = parseXLSX(inFilePath)
+    % Processes XLSX input file
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
         % initialize output struct
@@ -301,58 +246,6 @@ function [OUTPUT,cancel] = readInput(inFilePath,outputTemplatePath)
         OUTPUT.path = inFilePath;
     end
     
-    % createOutput ........................................................
-    function [tableDetections,tableMissedCalls,tableAnnotations] = createOutput(inTable,outputFilePath,outputTemplatePath)
-    % initializes output variables and creates the file
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-        % define variables
-        cols = {'FileName','FileStart','SigStart','SigEnd','SigStartDateTime','Class_LFDCS','Class_MATLAB','ReasonForUNK','Comments'};
-        blankCellstr = repmat({''},height(inTable),1);
-        dtRef = datetime(1970,1,1,0,0,0);
-    
-        % copy template output file to specified output path
-        [copyOK,copyMsg] = copyfile(outputTemplatePath,outputFilePath);
-        if ~copyOK
-            error('Could not create output file:\n%s',copyMsg)
-        end
-        
-        % get detection start datetimes
-        dtStart = dtRef + seconds(inTable.file_start) + seconds(inTable.det_start);
-
-        % get LFDCS classification
-        classLFDCS_num = inTable.val;
-        classLFDCS_str = blankCellstr;
-        if isnumeric(classLFDCS_num)
-            classLFDCS_str(classLFDCS_num == 9999) = {'Correct'};
-            classLFDCS_str(classLFDCS_num == 0) = {'Unknown'};
-            classLFDCS_str(classLFDCS_num == -9999) = {'Incorrect'};
-            classLFDCS_str(classLFDCS_num == -32767) = {'Unclassified'};
-        end
-
-        % get data for each column
-        FileName = inTable.filename;
-        FileStart = inTable.file_start;
-        SigStart = inTable.det_start;
-        SigEnd = inTable.det_stop;
-        SigStartDateTime = dtStart;
-        Class_LFDCS = classLFDCS_str;
-        Class_MATLAB = blankCellstr;
-        ReasonForUNK = blankCellstr;
-        Comments = blankCellstr;
-        
-        % create Detected table
-        tableDetections = table(FileName,FileStart,SigStart,SigEnd,SigStartDateTime,Class_LFDCS,Class_MATLAB,ReasonForUNK,Comments,...
-            'VariableNames',cols);
-        writetable(tableDetections,outputFilePath,'Sheet','Detected');
-        
-        % initialize Undetected table
-        tableMissedCalls = readtable(outputFilePath,'Sheet','Undetected');
-        
-        % initialize Annotations table
-        tableAnnotations = readtable(outputFilePath,'Sheet','Annotations');
-    end
-
     % forceTableCellStr ...................................................
     function tbl = forceTableCellStr(tbl,fields)
     % Ensures that specified fields in a table are cell arrays of strings
