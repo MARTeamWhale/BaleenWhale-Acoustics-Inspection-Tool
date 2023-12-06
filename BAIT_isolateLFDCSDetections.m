@@ -1,11 +1,12 @@
-function extract_LFDCS_detections(varargin)
+function BAIT_isolateLFDCSDetections(varargin)
 %
-%   Saves clips and/or spectrograms of LFDCS detections.
+%   Locates LFDCS detections within the original audio files of an acoustic
+%   dataset, and saves clips and/or spectrogram images of the detections.
 %
 %   SYNTAX
 %   -----------------------------------------------------------------------
-%   extract_LFDCS_detections()
-%   extract_LFDCS_detections(Name,Value)
+%   BAIT_isolateLFDCSDetections()
+%   BAIT_isolateLFDCSDetections(Name,Value)
 %   -----------------------------------------------------------------------
 %
 %
