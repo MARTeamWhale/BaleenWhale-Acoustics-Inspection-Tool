@@ -1,7 +1,7 @@
 function BAIT_convertLFDCSTable(varargin)
 %
 %   Convert LFDCS autodetection results into xlsx file compatible with 
-%   MERIDIAN detection validator program.
+%   the BAIT validator program.
 %
 %   NOTE: this function makes the assumption that the source audio file of 
 %   each detection in the input spreadsheet exists. If there are missing
@@ -30,7 +30,7 @@ function BAIT_convertLFDCSTable(varargin)
 %       detections originate. If not specified, user will be prompted to
 %       choose the folder.
 %
-%   output_file -> path in which to write the output MERIDIAN-style XLSX 
+%   output_file -> path in which to write the output BAIT-style XLSX 
 %       spreadsheet. If not specified, user is prompted to save the file.
 %   
 %   wav_subfolders -> True/False value specifying whether to search for
@@ -83,7 +83,7 @@ function BAIT_convertLFDCSTable(varargin)
     
     % get and validate input file paths
     
-    %%% template MERIDIAN output xlsx
+    %%% template BAIT output xlsx
     if ~isfile(outputTemplatePath)
         error('Could not find Detection Browser output template file')
     end

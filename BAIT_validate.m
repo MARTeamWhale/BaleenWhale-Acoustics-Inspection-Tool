@@ -5,13 +5,18 @@
 %   Last updated Dec 6, 2023 using MATLAB R2018b
 %
 %   Description:
-%   Allows a user to browse through and validate spectrograms of potential 
-%   right whale upcalls (or other whale calls of interest) detected by the 
-%   MERIDIAN neural network. It is also possible to use this for LFDCS
-%   detections by converting the LFDCS autodetections outputs into
-%   MERIDIAN-style spreadsheets using the BAIT_convertLFDCSTable script.
-%   Also supports marking of undetected (missed) calls and general 
-%   annotations.
+%   Launches a GUI that allows a user to browse through and validate
+%   spectrograms of potential baleen whale call detections. It is possible
+%   to use this tool to validate LFDCS detections by converting the LFDCS
+%   autodetections CSV tables into spreadsheets recognized by BAIT using
+%   the "BAIT_convertLFDCSTable" script. This tool can also be used to mark
+%   undetected (missed) calls and general annotations, though this
+%   capability is currently limited to the audio files where detections are
+%   present.
+%
+%   Note that while this tool supports validation of general baleen whale
+%   calls, it was originally developed for right whale upcalls only. Thus,
+%   certain aspects of this tool may still be optimized for this call type.
 %
 %   See reference manual for details.
 %
@@ -113,7 +118,7 @@ function BAIT_validate(varargin)
     inFilePath = p.Results.data_file;
     if isempty(inFilePath)
         % prompt user for input spreadsheet file
-        [inFile,inDir] = uigetfile('*.csv;*.xlsx','Select initial MERIDIAN or working spreadsheet file');
+        [inFile,inDir] = uigetfile('*.csv;*.xlsx','Select initial or working spreadsheet file (BAIT format)');
         inFilePath = fullfile(inDir,inFile);
         if isnumeric(inFile)
             return
@@ -171,8 +176,8 @@ function [OUTPUT,cancel] = readInput(inFilePath,outputTemplatePath)
 % Reads input file, determines its type, and setup output as appropriate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    % determine type of input spreadsheet (initial MERIDIAN CSV or 
-    % processed XLSX) based on file extension
+    % determine type of input spreadsheet (initial CSV or processed XLSX)
+    % based on file extension
     [~,~,inFileExt] = fileparts(inFilePath);
     switch inFileExt
         case '.csv'
@@ -211,7 +216,7 @@ function [OUTPUT,cancel] = readInput(inFilePath,outputTemplatePath)
     % NESTED FUNCTIONS 
     % parse Initial CSV ...................................................
     function [OUTPUT,cancel] = parseInitialCSV(inFilePath,outputTemplatePath)
-    % Processes initial MERIDIAN CSV file
+    % Processes initial CSV file
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
         % initialize output struct
