@@ -34,6 +34,9 @@ function extract_LFDCS_detections(varargin)
 %   DEPENDENCIES
 %       MUCA.io.saveFig
 %       MUCA.time.readDateTime
+%       BAIT.processParamFile
+%       BAIT.readParam
+%       BAIT.buildColormaps
 %
 %
 %   NOTES
@@ -59,7 +62,7 @@ function extract_LFDCS_detections(varargin)
 %   -----------------------------------------------------------------------
 %
 %   Written by Wilfried Beslin
-%   Last updated 2023-12-05 using MATLAB R2018b
+%   Last updated 2023-12-06 using MATLAB R2018b
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -249,9 +252,9 @@ function PARAMS = loadParams(paramFileInput)
 % Reads in program parameters from file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    import BWAV_code.processParamFile
-    import BWAV_code.readParam
-    import BWAV_code.buildColormaps
+    import BAIT.processParamFile
+    import BAIT.readParam
+    import BAIT.buildColormaps
 
     % read parameter file as a block of text
     scriptPath = mfilename('fullpath');

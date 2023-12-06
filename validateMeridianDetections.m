@@ -2,7 +2,7 @@
 %
 % function "validateMeridianDetections"
 %   Written by Wilfried Beslin
-%   Last updated Dec 5, 2023 using MATLAB R2018b
+%   Last updated Dec 6, 2023 using MATLAB R2018b
 %
 %   Description:
 %   Allows a user to browse through and validate spectrograms of potential 
@@ -97,7 +97,7 @@ function validateMeridianDetections(varargin)
     % define paths to resource folders and files
     scriptPath = mfilename('fullpath');
     [rootDir,~,~] = fileparts(scriptPath);
-    outputTemplatePath = fullfile(rootDir,'+BWAV_code','OutputTemplate.xlsx');
+    outputTemplatePath = fullfile(rootDir,'+BAIT','OutputTemplate.xlsx');
     
     % parse input
     p = inputParser;
@@ -375,9 +375,9 @@ function PARAMS = loadSetParams(paramFileInput)
 % Reads in program parameters from file (some may also be hard-coded)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    import BWAV_code.readParam
-    import BWAV_code.buildColormaps
-    import BWAV_code.processParamFile
+    import BAIT.readParam
+    import BAIT.buildColormaps
+    import BAIT.processParamFile
 
     % read parameter file as a block of text
     scriptPath = mfilename('fullpath');
@@ -805,6 +805,8 @@ function PLOT = initializePlotElements(haMain,haHidden)
 % Creates and initializes elements that appear in plot
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    import BAIT.MarkerHighlight
+
     % define common properties
     textInfoFontSize = 12;
     textInfoFontColor = [1 1 1];
@@ -832,7 +834,7 @@ function PLOT = initializePlotElements(haMain,haHidden)
     PLOT.linePlayback = matlab.graphics.GraphicsPlaceholder;
     
     % Initialize highlight lines
-    PLOT.highlight = BWAV_code.MarkerHighlight(haMain);
+    PLOT.highlight = MarkerHighlight(haMain);
  
     
     % HIDDEN ..............................................................

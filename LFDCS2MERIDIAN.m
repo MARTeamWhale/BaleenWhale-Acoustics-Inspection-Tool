@@ -44,7 +44,7 @@ function LFDCS2MERIDIAN(varargin)
 %
 %
 %   Written by Wilfried Beslin
-%   Last updated 2023-12-05 using MATLAB R2018b
+%   Last updated 2023-12-06 using MATLAB R2018b
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DEV NOTES
@@ -65,7 +65,7 @@ function LFDCS2MERIDIAN(varargin)
     % define paths to resource folders and files
     scriptPath = mfilename('fullpath');
     [rootDir,~,~] = fileparts(scriptPath);
-    outputTemplatePath = fullfile(rootDir,'+BWAV_code','OutputTemplate.xlsx');
+    outputTemplatePath = fullfile(rootDir,'+BAIT','OutputTemplate.xlsx');
     
     % parse input args
     p = inputParser;
@@ -257,8 +257,8 @@ function PARAMS = loadParams(paramFileInput)
 % Reads in program parameters from file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    import BWAV_code.processParamFile
-    import BWAV_code.readParam
+    import BAIT.processParamFile
+    import BAIT.readParam
 
     % read parameter file as a block of text
     scriptPath = mfilename('fullpath');
