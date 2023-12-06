@@ -5,6 +5,10 @@ function var = readParam(filestr, varname, validation_fcns)
 % functions that throw errors when conditions are not met, such as 'assert'
 % and 'validateattributes'. The variable is considered valid if it passes
 % at least one condition.
+%
+%   Written by Wilfried Beslin
+%   Last updated 2023-12-06 using MATLAB R2018b
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % define standard regex for reading parameters
