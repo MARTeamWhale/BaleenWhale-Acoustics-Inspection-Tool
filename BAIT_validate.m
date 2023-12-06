@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% function "validateMeridianDetections"
+% function "BAIT_validate"
 %   Written by Wilfried Beslin
 %   Last updated Dec 6, 2023 using MATLAB R2018b
 %
@@ -17,11 +17,11 @@
 %
 %   Syntax
 %   -----------------------------------------------------------------------
-%   validateMeridianDetections - launches the browser with default 
+%   BAIT_validate - launches the browser with default 
 %       settings, and prompts the user to specify the input spreadsheet 
 %       file and folder of WAV files
 %
-%   validateMeridianDetections(Name,Value) - launches the browser with
+%   BAIT_validate(Name,Value) - launches the browser with
 %       specified Name-Value pair input arguments. Multiple Name-Value
 %       pairs can be specified at once. These named arguments are the
 %       following:
@@ -83,7 +83,7 @@
 %}
 
 
-function validateMeridianDetections(varargin)
+function BAIT_validate(varargin)
 
     % Clear profiler (DEBUG ONLY)
     %profile clear
