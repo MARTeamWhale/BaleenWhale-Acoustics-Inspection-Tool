@@ -1,4 +1,4 @@
-function [paramFileText, usingDefault] = processParamFile(paramFileInputRaw, rootDir, scriptName)
+function [paramFileText, usingDefault] = processParamFile(paramFileInputRaw, rootDir, scriptNameFull)
 % Parse an input parameter file name or path and try to locate the file. If
 % the file is found, return the file contents.
 %
@@ -8,15 +8,18 @@ function [paramFileText, usingDefault] = processParamFile(paramFileInputRaw, roo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+    % remove package name from script name
+    scriptNameSlim = erase(scriptNameFull, 'BAIT_');
+
     % set path to PARAMS folder
-    paramsDir = fullfile(rootDir, 'PARAMS', scriptName);
+    paramsDir = fullfile(rootDir, 'PARAMS', scriptNameSlim);
 
     % check if the input is empty, in which case default parameters should
     % be used
     usingDefault = isempty(paramFileInputRaw);
     if usingDefault
         % get default params
-        defaultFileFullName = ['DefaultParams.',scriptName,'.txt'];
+        defaultFileFullName = ['DefaultParams.',scriptNameSlim,'.txt'];
         paramFileInitPath = fullfile(paramsDir, defaultFileFullName);
         assert(isfile(paramFileInitPath), sprintf('Could not find default parameter file "%s"',defaultFileFullName))
     else
