@@ -471,7 +471,7 @@ function UI = buildUI(PARAMS)
     % Create figure
     UI.fig = uifigure;
     UI.fig.Position = fPos;
-    UI.fig.Name = 'Whale Call Validator';
+    UI.fig.Name = 'BAIT - Acoustic Detection Validator';
 
     % Create axesMain
     UI.axesMain = axes(UI.fig);
