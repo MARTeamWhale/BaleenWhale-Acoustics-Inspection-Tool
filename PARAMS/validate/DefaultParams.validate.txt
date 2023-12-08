@@ -1,17 +1,19 @@
 ###################################################################################################
 #
-# DEFAULT PARAMETER FILE
-# These parameters will be loaded into the MATLAB autodetection browser/validation tool by default.
-# You can create your own parameter files using this as a template and add them to this folder.
-# Please note these parameters are subject to change in future versions.
-# Compatible with version 20211028
+# PARAMETER FILE for BAIT_validate
+#
+# Controls the appearance and navigation of spectrogram plots, and the appearance of marker boxes
+# that denote detections or annotation. Also controls which channel to use for multi-channel
+# reordings (this can be set here directly, or determined interactively).
+#
+# Compatible with BAIT release 2023-12-08
 #
 ###################################################################################################
 
 
 # AUDIO CHANNEL
 #--------------
-    ChannelNumber = prompt	# Channel number to use if recordings have multiple channels; specify 'prompt' to set the channel interactively
+    ChannelNumber = prompt	# Channel number to use if recordings have multiple channels; specify 'prompt' (without quotes) to set the channel interactively
 
 
 # SPECTROGRAM SETTINGS

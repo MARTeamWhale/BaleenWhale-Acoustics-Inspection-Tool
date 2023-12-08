@@ -1,9 +1,11 @@
 ###################################################################################################
 #
-# PARAMETER FILE for LFDCS2MERIDIAN
+# PARAMETER FILE for BAIT_convertLFDCSTable
+# 
 # These parameters define filters that control which detections in an LFDCS autodetections CSV file
-# are imported when running LFDCS2MERIDIAN.
-# Compatible with version [IN PROGRESS]
+# are imported when running "BAIT_convertLFDCSTable".
+#
+# Compatible with BAIT release 2023-12-08
 #
 ###################################################################################################
 

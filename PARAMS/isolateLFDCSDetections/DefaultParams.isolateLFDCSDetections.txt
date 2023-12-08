@@ -1,9 +1,11 @@
 ###################################################################################################
 #
-# PARAMETER FILE for extract_LFDCS_detections
+# PARAMETER FILE for BAIT_isolateLFDCSDetections
+#
 # These parameters control how clips and/or spectrogram plots are generated for a set of LFDCS
-# detections.
-# Compatible with version [IN PROGRESS]
+# detections when running "BAIT_isolateLFDCSDetections".
+#
+# Compatible with BAIT release 2023-12-08
 #
 ###################################################################################################
 
