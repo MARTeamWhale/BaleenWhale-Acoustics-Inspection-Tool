@@ -23,11 +23,11 @@ The scripts are designed such that **there is no need to edit any code** to run 
 
 More information on usage is available through the following resources:
 
-- Script file headers (i.e. comment block at the top of the file)
-
 - *SUMMARY_OF_IMPORTANT_CHANGES.pdf*
 
-- *MERIDIAN_Detection_Browser_ReferenceManual_20211028.pdf* (OUT OF DATE, but still relevant for understanding how to use the GUI)
+- *BAIT_ReferenceManual.pdf*
+
+- Script file headers (i.e., comment blocks at the top of the M-files)
 
 
 ## References
