@@ -192,7 +192,7 @@ function BAIT_convertLFDCSTable(varargin)
     
     % 4) GET WAV FILE LIST AND RECORDING TIMES ............................
     disp('Getting WAV file times...')
-    [~, wavFileNames] = listFiles(wavDir, 'wav', 'Recursive',search_wav_subfolders);
+    [wavFilePaths, wavFileNames] = listFiles(wavDir, 'wav', 'Recursive',search_wav_subfolders);
     
     % extract datetime from WAV files
     dtWav = readDateTime(wavFileNames);
@@ -200,6 +200,10 @@ function BAIT_convertLFDCSTable(varargin)
     % sort WAV files based on start time
     [dtWav, iSort] = sort(dtWav);
     wavFileNames = wavFileNames(iSort);
+    wavFilePaths = wavFilePaths(iSort);
+    
+    % get WAV file paths relative to root
+    wavFileRelPaths = erase(wavFilePaths, [wavDir,filesep]);
     
     
     % 5) ASSIGN WAV FILES TO EACH AUTODETECTION ...........................
@@ -225,7 +229,8 @@ function BAIT_convertLFDCSTable(varargin)
     
     % create output table
     outTableHeader = {'FileName','FileStart','SigStart','SigEnd','SigStartDateTime','Class_LFDCS','Class_MATLAB','ReasonForUNK','Comments'};
-    FileName = wavFileNames(iDetWav(good_files));
+    %FileName = wavFileNames(iDetWav(good_files));
+    FileName = wavFileRelPaths(iDetWav(good_files)); % relative paths are needed if files are spread across subfolders
     FileStart = seconds(dtWav(iDetWav(good_files)) - dtRef);
     SigStart = seconds(det_start_absolute(good_files) - dtRef) - FileStart;
     SigEnd = seconds(det_end_absolute(good_files) - dtRef) - FileStart;
