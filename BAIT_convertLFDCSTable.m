@@ -23,8 +23,8 @@ function BAIT_convertLFDCSTable(varargin)
 %       function defines some filtering variables that decide which
 %       detections will be included in the converted spreadsheet.
 %
-%   input_file -> path of the input LFDCS autodetetions spreadsheet. May be 
-%       CSV or XLSX. If not specified, user is prompted to select file.
+%   input_file -> path of the input LFDCS autodetetions CSV file. If not
+%       specified, user is prompted to select file.
 %
 %   wav_dir -> path of folder containing raw audio files from which the
 %       detections originate. If not specified, user will be prompted to
@@ -93,7 +93,7 @@ function BAIT_convertLFDCSTable(varargin)
     %%% LFDCS spreadsheet
     inFilePath = p.Results.input_file;
     if isempty(inFilePath)
-        [inFileName,inFileDir] = uigetfile({'*.csv';'*.xlsx'},'Select LFDCS spreadsheet');
+        [inFileName,inFileDir] = uigetfile('*.csv','Select LFDCS autodetections CSV file');
         inFilePath = fullfile(inFileDir,inFileName);
         if isnumeric(inFileName)
             return
@@ -127,7 +127,7 @@ function BAIT_convertLFDCSTable(varargin)
     end
     
     % set columns containing manual species codes and auto call type codes
-    iColSpecies = 10; %15 for commented XLSX files...
+    iColSpecies = 10;
     iColCallType = 1;
     
     % read LFDCS autodetections file as table
