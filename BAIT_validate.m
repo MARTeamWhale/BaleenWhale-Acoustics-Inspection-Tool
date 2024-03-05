@@ -2,7 +2,7 @@
 %
 % function "BAIT_validate"
 %   Written by Wilfried Beslin
-%   Last updated Dec 6, 2023 using MATLAB R2018b
+%   Last updated Mar 5, 2024 using MATLAB R2018b
 %
 %   Description:
 %   Launches a GUI that allows a user to browse through and validate
@@ -361,7 +361,7 @@ function DATA = initializeData(OUTPUT,PARAMS,wavDir)
     % get/define common variables
     outTable = OUTPUT.tableDetections;
     dtRef = datetime(1970,1,1,0,0,0);
-    [wavList,iUniqueWav,iDetWav] = unique(outTable.FileName);
+    [wavList,iUniqueWav,iDetWav] = unique(outTable.FileName,'stable');
 
     % initialize output
     DATA = struct;
