@@ -48,11 +48,7 @@ function BAIT_convertLFDCSTable(varargin)
 %   Last updated 2024-03-05 using MATLAB R2018b
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% DEV NOTES
-% 2022-06-17
-% ----------
-% - WARNING! Currently, this script may fail if there are subfolders that
-% contain earlier recordings, as the recordings may be out of order
+
 
     import MUCA.filepaths.listFiles
     import MUCA.time.readDateTime
@@ -200,6 +196,10 @@ function BAIT_convertLFDCSTable(varargin)
     
     % extract datetime from WAV files
     dtWav = readDateTime(wavFileNames);
+    
+    % sort WAV files based on start time
+    [dtWav, iSort] = sort(dtWav);
+    wavFileNames = wavFileNames(iSort);
     
     
     % 5) ASSIGN WAV FILES TO EACH AUTODETECTION ...........................
