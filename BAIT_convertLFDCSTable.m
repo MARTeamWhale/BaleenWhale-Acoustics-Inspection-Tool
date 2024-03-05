@@ -41,10 +41,11 @@ function BAIT_convertLFDCSTable(varargin)
 % DEPENDENCIES:
 %   MUCA.filepaths.listFiles
 %   MUCA.time.readDateTime
+%   MUCA.io.importTextFile
 %
 %
 %   Written by Wilfried Beslin
-%   Last updated 2023-12-06 using MATLAB R2018b
+%   Last updated 2024-03-05 using MATLAB R2018b
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DEV NOTES
@@ -55,6 +56,7 @@ function BAIT_convertLFDCSTable(varargin)
 
     import MUCA.filepaths.listFiles
     import MUCA.time.readDateTime
+    import MUCA.io.importTextFile
 
     % 1) INITIALIZATION AND INPUT ARGUMENT PARSING ........................
     disp('Initializing...')
@@ -115,15 +117,21 @@ function BAIT_convertLFDCSTable(varargin)
     % 3) EXTRACT LFDCS DATA ...............................................
     disp('Extracting LFDCS data...')
     
-    % set number of LFDCS header lines
-    LFDCSHeader = 23;
+    % determine number of header lines in LFDCS CSV file
+    fileText = importTextFile(inFilePath);
+    numHeaderLines = find(cellfun('isempty',fileText), 1, 'last');
+    if isempty(numHeaderLines)
+        headerExpr = '^,+$'; % expression for getting a row of commas
+        headerMatch = regexp(fileText, headerExpr);
+        numHeaderLines = find(~cellfun('isempty',headerMatch), 1, 'last');
+    end
     
     % set columns containing manual species codes and auto call type codes
     iColSpecies = 10; %15 for commented XLSX files...
     iColCallType = 1;
     
     % read LFDCS autodetections file as table
-    importOpts = detectImportOptions(inFilePath, 'NumHeaderLines',LFDCSHeader, 'DatetimeType','text');
+    importOpts = detectImportOptions(inFilePath, 'NumHeaderLines',numHeaderLines, 'DatetimeType','text');
     tableLFDCS = readtable(inFilePath, importOpts);
     
     % truncate table to include only the species and call type codes of
