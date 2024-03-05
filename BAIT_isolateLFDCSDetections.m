@@ -297,7 +297,8 @@ function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, recurs
     LFDCS_header_rows = 23;
     start_time_col = 2;
     duration_col = 4;
-    deployment_expr = '[A-Z]{3,4}_\d{4}_\d{2}';
+    %deployment_expr = '[A-Z]{3,4}_\d{4}_\d{2}';
+    deployment_expr = '^[a-zA-Z0-9]+_\d{4}_\d{2}';
     
     % get table
     import_opts = detectImportOptions(LFDCS_file_path,'NumHeaderLines',LFDCS_header_rows);
