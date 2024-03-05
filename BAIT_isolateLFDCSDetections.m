@@ -291,6 +291,7 @@ function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, recurs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     import MUCA.time.readDateTime
+    import MUCA.filepaths.listFiles
 
     dt_ref = datetime(1970,1,1,0,0,0);
     LFDCS_header_rows = 23;
@@ -324,7 +325,7 @@ function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, recurs
     
     % get WAV file for each detection
     disp('Getting WAV file times...')
-    [rec_file_names,rec_file_paths] = Utilities.getFileNames(audio_dir, 'wav', recursive_search);
+    [rec_file_paths, rec_file_names] = listFiles(audio_dir, 'wav', 'Recursive',recursive_search);
     rec_times = readDateTime(rec_file_names);
     %rec_times_secs = seconds(rec_times - dt_ref);
     
@@ -362,6 +363,8 @@ function [output_folders, existing_clips, existing_specs] = process_output_folde
 % and query existing files.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    import MUCA.filepaths.listFiles
+
     % ask user for output folder path if not specified
     if isempty(usr_output_dir)
         output_root_dir = uigetdir(pwd, 'Specify root output folder');
@@ -381,7 +384,7 @@ function [output_folders, existing_clips, existing_specs] = process_output_folde
     output_clip_dir = fullfile(output_root_dir, 'clips');
     existing_clips = [];
     if isfolder(output_clip_dir)
-        existing_clips = Utilities.getFileNames(output_clip_dir, 'wav');
+        [~,existing_clips] = listFiles(output_clip_dir, 'wav');
     elseif do_clips
         mkdir(output_clip_dir);
     end
@@ -390,7 +393,7 @@ function [output_folders, existing_clips, existing_specs] = process_output_folde
     output_spec_dir = fullfile(output_root_dir, 'spectrograms');
     existing_specs = [];
     if isfolder(output_spec_dir)
-        existing_specs = Utilities.getFileNames(output_spec_dir, 'png');
+        [~,existing_specs] = listFiles(output_spec_dir, 'png');
     elseif do_specs
         mkdir(output_spec_dir);
     end
