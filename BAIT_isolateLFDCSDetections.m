@@ -26,6 +26,16 @@ function BAIT_isolateLFDCSDetections(varargin)
 %       files within which calls were detected in LFDCS. If not specified,
 %       user will be prompted to choose a folder.
 %   .......................................................................
+%   "read_stop_times" - True/False value specifying whether or not audio
+%       file stop times should be read or not. Setting this to true results
+%       in more accurate and robust determination of which audio file each
+%       detection is contained in, but at the cost of significantly greater
+%       processing time. If false, it is assumed that the stop time of an
+%       audio file corresponds to the start time of the next audio file, 
+%       which is much faster and works in most cases, but may result in 
+%       errors if the timeseries is not monotonic or contains missing 
+%       files. Default is false.
+%   .......................................................................
 %   "overwrite" - True/false value specifying whether or not existing clips 
 %       or spectrograms in the output folder should be overwritten. Default
 %       is false.
@@ -36,6 +46,7 @@ function BAIT_isolateLFDCSDetections(varargin)
 %       BAIT.processParamFile
 %       BAIT.readParam
 %       BAIT.buildColormaps
+%       BAIT.getRecTimes
 %       MUCA.io.saveFig
 %       MUCA.time.readDateTime
 %
@@ -78,6 +89,7 @@ function BAIT_isolateLFDCSDetections(varargin)
     p.addParameter('input_file', '', @ischar)
     p.addParameter('output_dir', '', @ischar)
     p.addParameter('audio_dir', '', @ischar)
+    p.addParameter('read_stop_times', false)
     p.addParameter('overwrite', false)
     
     p.parse(varargin{:})
@@ -85,6 +97,7 @@ function BAIT_isolateLFDCSDetections(varargin)
     input_file_path = p.Results.input_file;
     usr_output_dir = p.Results.output_dir;
     audio_dir = p.Results.audio_dir;
+    get_rec_stop_times = p.Results.read_stop_times;
     overwrite = p.Results.overwrite;
     
     % import parameters
@@ -150,7 +163,7 @@ function BAIT_isolateLFDCSDetections(varargin)
         
         % read LFDCS file
         disp('Processing LFDCS detections...')
-        [data, deployment] = read_LFDCS_file(input_file_path, audio_dir, PARAMS.RecursiveSearch);
+        [data, deployment] = read_LFDCS_file(input_file_path, audio_dir, PARAMS.RecursiveSearch, get_rec_stop_times);
         if isempty(data)
             disp('Cancelling')
             return
@@ -286,11 +299,12 @@ end
 
 
 % read_LFDCS_file ---------------------------------------------------------
-function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, recursive_search)
+function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, recursive_search, get_rec_stop_times)
 % Extract relevant info from CSV file exported by LFDCS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     import BAIT.readLFDCSTable
+    import BAIT.getRecTimes
     import MUCA.time.readDateTime
     import MUCA.filepaths.listFiles
 
@@ -322,27 +336,44 @@ function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, recurs
     
     % get WAV file for each detection
     disp('Getting WAV file times...')
-    [rec_file_paths, rec_file_names] = listFiles(audio_dir, 'wav', 'Recursive',recursive_search);
-    rec_times = readDateTime(rec_file_names);
+    [rec_file_paths, ~] = listFiles(audio_dir, 'wav', 'Recursive',recursive_search);
+    if get_rec_stop_times
+        [rec_start_times, rec_stop_times] = getRecTimes(rec_file_paths);
+    else
+        rec_start_times = getRecTimes(rec_file_paths);
+    end
     
     %%% sort files in case they are out of order
-    [rec_times_sorted, idx_sort] = sort(rec_times);
+    [rec_start_times_sorted, idx_sort] = sort(rec_start_times);
+    if get_rec_stop_times
+        rec_stop_times_sorted = rec_stop_times(idx_sort);
+    else
+        rec_stop_times_sorted = [rec_start_times_sorted(2:end); datetime(Inf, Inf, Inf)];
+    end
     rec_file_paths_sorted = rec_file_paths(idx_sort);
     
     %%% get recording file ID for each detection
     det_rec_file_idx = NaN(num_detections,1);
     for ii = 1:num_detections
         det_time_ii = det_times(ii,1);
-        rec_idx_ii = find(rec_times_sorted <= det_time_ii,1,'last');
-        det_rec_file_idx(ii) = rec_idx_ii;
+        %rec_idx_ii = find(rec_times_sorted <= det_time_ii,1,'last');
+        rec_idx_ii = find(rec_start_times_sorted <= det_time_ii & rec_stop_times_sorted > det_time_ii);
+        if numel(rec_idx_ii) == 1
+            det_rec_file_idx(ii) = rec_idx_ii;
+        else
+            warning('Detection %d/%d: could not identify a unique source audio file for this detection.', ii, num_detections)
+        end
     end
+    
+    % remove detections with no or too many files
+    det_has_file = ~isnan(det_rec_file_idx);
     
     % reorganize and keep useful data
     data_table_headers = {'FilePath', 'FileStart', 'DetTime', 'DetDur'};
-    data_FilePath = rec_file_paths_sorted(det_rec_file_idx);
-    data_FileStart = rec_times_sorted(det_rec_file_idx);
-    data_DetTime = seconds(det_times(:,1) - rec_times_sorted(det_rec_file_idx));
-    data_DetDur = LFDCS_table.Duration;
+    data_FilePath = rec_file_paths_sorted(det_rec_file_idx(det_has_file));
+    data_FileStart = rec_start_times_sorted(det_rec_file_idx(det_has_file));
+    data_DetTime = seconds(det_times(det_has_file,1) - rec_start_times_sorted(det_rec_file_idx(det_has_file)));
+    data_DetDur = LFDCS_table.Duration(det_has_file);
     
     data = table(data_FilePath, data_FileStart, data_DetTime, data_DetDur, 'VariableNames',data_table_headers);
     
