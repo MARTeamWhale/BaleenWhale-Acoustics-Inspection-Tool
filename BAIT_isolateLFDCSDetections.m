@@ -33,11 +33,11 @@ function BAIT_isolateLFDCSDetections(varargin)
 %
 %
 %   DEPENDENCIES
-%       MUCA.io.saveFig
-%       MUCA.time.readDateTime
 %       BAIT.processParamFile
 %       BAIT.readParam
 %       BAIT.buildColormaps
+%       MUCA.io.saveFig
+%       MUCA.time.readDateTime
 %
 %
 %   NOTES
@@ -63,7 +63,7 @@ function BAIT_isolateLFDCSDetections(varargin)
 %   -----------------------------------------------------------------------
 %
 %   Written by Wilfried Beslin
-%   Last updated 2023-12-06 using MATLAB R2018b
+%   Last updated 2024-03-06 using MATLAB R2018b
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -290,24 +290,20 @@ function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, recurs
 % Extract relevant info from CSV file exported by LFDCS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    import BAIT.readLFDCSTable
     import MUCA.time.readDateTime
     import MUCA.filepaths.listFiles
 
-    dt_ref = datetime(1970,1,1,0,0,0);
-    LFDCS_header_rows = 23;
-    start_time_col = 2;
-    duration_col = 4;
     %deployment_expr = '[A-Z]{3,4}_\d{4}_\d{2}';
     deployment_expr = '^[a-zA-Z0-9]+_\d{4}_\d{2}';
     
-    % get table
-    import_opts = detectImportOptions(LFDCS_file_path,'NumHeaderLines',LFDCS_header_rows);
-    LFDCS_table = readtable(LFDCS_file_path,import_opts);
+    % read LFDCS CSV
+    [LFDCS_table, det_times, ~, precision_loss] = readLFDCSTable(LFDCS_file_path);
     num_detections = height(LFDCS_table);
     
-    % check detection times to see if Excel has dropped the milliseconds. 
-    % Issue a warning if so.
-    if mean(LFDCS_table.Var2 - round(LFDCS_table.Var2) == 0) > 0.8
+    % Issue a warning if Excel has dropped milliseconds and prompt user for
+    % action
+    if precision_loss
         time_prompt_cell = {...
             'It appears that the LFDCS detection times have been rounded, likely because the CSV file was opened and saved in Microsoft Excel. This will cause the position of the detections within the clips or spectrograms to be slightly inaccurate.';...
             'It is STRONGLY RECOMMENDED to use a CSV file that contains the true detection times. If an unaltered backup of the original file is not available, it will have to be recreated using the "export_autodetections" command in LFDCS.';...
@@ -328,16 +324,15 @@ function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, recurs
     disp('Getting WAV file times...')
     [rec_file_paths, rec_file_names] = listFiles(audio_dir, 'wav', 'Recursive',recursive_search);
     rec_times = readDateTime(rec_file_names);
-    %rec_times_secs = seconds(rec_times - dt_ref);
     
     %%% sort files in case they are out of order
     [rec_times_sorted, idx_sort] = sort(rec_times);
     rec_file_paths_sorted = rec_file_paths(idx_sort);
     
-    det_times = dt_ref + seconds(LFDCS_table{:, start_time_col});
+    %%% get recording file ID for each detection
     det_rec_file_idx = NaN(num_detections,1);
     for ii = 1:num_detections
-        det_time_ii = det_times(ii);
+        det_time_ii = det_times(ii,1);
         rec_idx_ii = find(rec_times_sorted <= det_time_ii,1,'last');
         det_rec_file_idx(ii) = rec_idx_ii;
     end
@@ -346,8 +341,8 @@ function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, recurs
     data_table_headers = {'FilePath', 'FileStart', 'DetTime', 'DetDur'};
     data_FilePath = rec_file_paths_sorted(det_rec_file_idx);
     data_FileStart = rec_times_sorted(det_rec_file_idx);
-    data_DetTime = seconds(det_times - rec_times_sorted(det_rec_file_idx));
-    data_DetDur = LFDCS_table{:, duration_col};
+    data_DetTime = seconds(det_times(:,1) - rec_times_sorted(det_rec_file_idx));
+    data_DetDur = LFDCS_table.Duration;
     
     data = table(data_FilePath, data_FileStart, data_DetTime, data_DetDur, 'VariableNames',data_table_headers);
     
