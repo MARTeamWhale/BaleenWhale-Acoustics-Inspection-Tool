@@ -36,10 +36,21 @@ function BAIT_convertLFDCSTable(varargin)
 %   wav_subfolders -> True/False value specifying whether to search for
 %       audio files within any subfolders that may exist in the root audio
 %       folder. Default is true.
+%
+%   read_stop_times -> True/False value specifying whether or not audio
+%       file stop times should be read or not. Setting this to true results
+%       in more accurate and robust determination of which audio file each
+%       detection is contained in, but at the cost of significantly greater
+%       processing time. If false, it is assumed that the stop time of an
+%       audio file corresponds to the start time of the next audio file, 
+%       which is much faster and works in most cases, but may result in 
+%       errors if the timeseries is not monotonic or contains missing 
+%       files. Default is false.
 % -------------------------------------------------------------------------
 %
 % DEPENDENCIES:
 %   BAIT.readLFDCSTable
+%   BAIT.getRecTimes
 %   MUCA.filepaths.listFiles
 %   MUCA.time.readDateTime
 %
@@ -51,6 +62,7 @@ function BAIT_convertLFDCSTable(varargin)
 
 
     import BAIT.readLFDCSTable
+    import BAIT.getRecTimes
     import MUCA.filepaths.listFiles
     import MUCA.time.readDateTime
 
@@ -72,12 +84,14 @@ function BAIT_convertLFDCSTable(varargin)
     p.addParameter('wav_dir', '', @ischar)
     p.addParameter('output_file', '', @ischar)
     p.addParameter('wav_subfolders', true, @islogical)
+    p.addParameter('read_stop_times', false, @islogical)
     p.parse(varargin{:})
 
     paramsFileInput = p.Results.params;
     wavDir = p.Results.wav_dir;
     outputFilePath = p.Results.output_file;
     search_wav_subfolders = p.Results.wav_subfolders;
+    getRecStopTimes = p.Results.read_stop_times;
     
     % get and validate input file paths
     
@@ -156,14 +170,24 @@ function BAIT_convertLFDCSTable(varargin)
     
     % 4) GET WAV FILE LIST AND RECORDING TIMES ............................
     disp('Getting WAV file times...')
-    [wavFilePaths, wavFileNames] = listFiles(wavDir, 'wav', 'Recursive',search_wav_subfolders);
+    [wavFilePaths, ~] = listFiles(wavDir, 'wav', 'Recursive',search_wav_subfolders);
     
     % extract datetime from WAV files
-    dtWav = readDateTime(wavFileNames);
+    %dtWav = readDateTime(wavFileNames);
+    if getRecStopTimes
+        [dtWavStart, dtWavStop] = getRecTimes(wavFilePaths);
+    else
+        dtWavStart = getRecTimes(wavFilePaths);
+    end
     
     % sort WAV files based on start time
-    [dtWav, iSort] = sort(dtWav);
-    wavFileNames = wavFileNames(iSort);
+    [dtWavStart, iSort] = sort(dtWavStart);
+    if getRecStopTimes
+        dtWavStop = dtWavStop(iSort);
+    else
+        dtWavStop = [dtWavStart(2:end); datetime(Inf, Inf, Inf)];
+    end
+    %wavFileNames = wavFileNames(iSort);
     wavFilePaths = wavFilePaths(iSort);
     
     % get WAV file paths relative to root
@@ -177,13 +201,16 @@ function BAIT_convertLFDCSTable(varargin)
     iDetWav = NaN(n,1);
     for ii = 1:n
         detStartii = detTimes(ii,1);
-        iWavii = find(dtWav <= detStartii, 1, 'last');
-        if ~isempty(iWavii)
+        %iWavii = find(dtWavStart <= detStartii, 1, 'last');
+        iWavii = find(dtWavStart <= detStartii & dtWavStop > detStartii);
+        if numel(iWavii) == 1
             iDetWav(ii) = iWavii;
+        elseif numel(iWavii) > 1
+            warning('Detection %d/%d: multiple audio files occur simultaneously at the time of this detection. Detection will be ignored.', ii, n)
         end
     end
     
-    % remove entries that have no WAV files
+    % remove entries that have no or overlapping WAV files
     good_files = ~isnan(iDetWav);
     n_good = sum(good_files);
     
@@ -195,7 +222,7 @@ function BAIT_convertLFDCSTable(varargin)
     outTableHeader = {'FileName','FileStart','SigStart','SigEnd','SigStartDateTime','Class_LFDCS','Class_MATLAB','ReasonForUNK','Comments'};
     %FileName = wavFileNames(iDetWav(good_files));
     FileName = wavFileRelPaths(iDetWav(good_files)); % relative paths are needed if files are spread across subfolders
-    FileStart = seconds(dtWav(iDetWav(good_files)) - dtRef);
+    FileStart = seconds(dtWavStart(iDetWav(good_files)) - dtRef);
     SigStart = seconds(detTimes(good_files,1) - dtRef) - FileStart;
     SigEnd = seconds(detTimes(good_files,2) - dtRef) - FileStart;
     SigStartDateTime = detTimes(good_files,1);
