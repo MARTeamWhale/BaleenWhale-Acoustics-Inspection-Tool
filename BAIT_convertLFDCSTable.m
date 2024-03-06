@@ -39,20 +39,20 @@ function BAIT_convertLFDCSTable(varargin)
 % -------------------------------------------------------------------------
 %
 % DEPENDENCIES:
+%   BAIT.readLFDCSTable
 %   MUCA.filepaths.listFiles
 %   MUCA.time.readDateTime
-%   MUCA.io.importTextFile
 %
 %
 %   Written by Wilfried Beslin
-%   Last updated 2024-03-05 using MATLAB R2018b
+%   Last updated 2024-03-06 using MATLAB R2018b
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+    import BAIT.readLFDCSTable
     import MUCA.filepaths.listFiles
     import MUCA.time.readDateTime
-    import MUCA.io.importTextFile
 
     % 1) INITIALIZATION AND INPUT ARGUMENT PARSING ........................
     disp('Initializing...')
@@ -113,68 +113,12 @@ function BAIT_convertLFDCSTable(varargin)
     % 3) EXTRACT LFDCS DATA ...............................................
     disp('Extracting LFDCS data...')
     
-    % determine number of header lines in LFDCS CSV file
-    fileText = importTextFile(inFilePath);
-    numHeaderLines = find(cellfun('isempty',fileText), 1, 'last');
-    if isempty(numHeaderLines)
-        headerExpr = '^,+$'; % expression for getting a row of commas
-        headerMatch = regexp(fileText, headerExpr);
-        numHeaderLines = find(~cellfun('isempty',headerMatch), 1, 'last');
-    end
+    % read the LFDCS table
+    [tableLFDCS, detTimes, ~, precisionLoss] = readLFDCSTable(inFilePath);
     
-    % set columns containing manual species codes and auto call type codes
-    iColSpecies = 10;
-    iColCallType = 1;
-    
-    % read LFDCS autodetections file as table
-    importOpts = detectImportOptions(inFilePath, 'NumHeaderLines',numHeaderLines, 'DatetimeType','text');
-    tableLFDCS = readtable(inFilePath, importOpts);
-    
-    % truncate table to include only the species and call type codes of
-    % interest
-    %%% manual species codes
-    if ~isnan(PARAMS.ManualSpeciesCodes)
-        rowsInclude = ismember(tableLFDCS{:,iColSpecies},PARAMS.ManualSpeciesCodes);
-        tableLFDCS = tableLFDCS(rowsInclude,:);
-    end
-    %%% auto call type codes
-    if ~isnan(PARAMS.AutoCallTypes)
-        rowsInclude = ismember(tableLFDCS{:,iColCallType},PARAMS.AutoCallTypes);
-        tableLFDCS = tableLFDCS(rowsInclude,:);
-    end
-    
-    % get absolute detection times based on time type
-    iColStartTime = 2;
-    if isnumeric(tableLFDCS{:,iColStartTime})
-        % process for case where start-end times are provided relative
-        % to 1970/01/01
-        iColEndTime = 3;
-
-        det_start_absolute = dtRef + seconds(tableLFDCS{:,iColStartTime});
-        det_end_absolute = dtRef + seconds(tableLFDCS{:,iColEndTime});
-    else
-        % process for case where start times are provided using
-        % absolute datetimes and fractional seconds
-        iColStartFracSec = 3;
-        iColDuration = 4;
-
-        det_start_rounded = datetime(tableLFDCS{:,iColStartTime}, 'InputFormat','MM/dd/yy HH:mm:ss', 'PivotYear',year(datetime('now'))-99);
-        det_start_absolute = det_start_rounded + seconds(tableLFDCS{:,iColStartFracSec});
-        det_end_absolute = det_start_absolute + seconds(tableLFDCS{:,iColDuration});
-    end
-    
-    % truncate table to include only detections within time period of
-    % interest
-    rowsInclude = det_start_absolute >= PARAMS.StartDateTime & det_end_absolute <= PARAMS.StopDateTime;
-    det_start_absolute = det_start_absolute(rowsInclude);
-    det_end_absolute = det_end_absolute(rowsInclude);
-    tableLFDCS = tableLFDCS(rowsInclude,:);
-    
-    n = height(tableLFDCS);
-    
-    % check detection times to see if Excel has dropped the milliseconds. 
-    % Issue a warning if so.
-    if mean(second(det_start_absolute) - round(second(det_start_absolute)) == 0) > 0.8
+    % Issue a warning if Excel has dropped milliseconds and prompt user for
+    % action
+    if precisionLoss
         time_prompt_cell = {...
             'It appears that the LFDCS detection times have been rounded, likely because the CSV file was opened and saved in Microsoft Excel. This will result in inaccurate bounding boxes when viewing the detections, and may cause further issues for other people using the data.';...
             'It is STRONGLY RECOMMENDED to use a CSV file that contains the true detection times. If an unaltered backup of the original file is not available, it will have to be recreated using the "export_autodetections" command in LFDCS.';...
@@ -188,6 +132,26 @@ function BAIT_convertLFDCSTable(varargin)
             return
         end
     end
+    
+    % truncate table to include only the species, call type codes, and 
+    % dates of interest
+    rowsInclude = true(height(tableLFDCS),1);
+    %%% manual species codes
+    if ~isnan(PARAMS.ManualSpeciesCodes)
+        rowsInclude = rowsInclude & ismember(tableLFDCS.ManualSpeciesCode,PARAMS.ManualSpeciesCodes);
+    end
+    %%% auto call type codes
+    if ~isnan(PARAMS.AutoCallTypes)
+        rowsInclude = rowsInclude & ismember(tableLFDCS.CallType,PARAMS.AutoCallTypes);
+    end
+    %%% date-time range
+    rowsInclude = rowsInclude & detTimes(:,1) >= PARAMS.StartDateTime & detTimes(:,1) <= PARAMS.StopDateTime;
+    %%% apply filters
+    tableLFDCS = tableLFDCS(rowsInclude,:);
+    detTimes = detTimes(rowsInclude,:);
+    
+    % get number of filtered detections
+    n = height(tableLFDCS);
     
     
     % 4) GET WAV FILE LIST AND RECORDING TIMES ............................
@@ -212,7 +176,7 @@ function BAIT_convertLFDCSTable(varargin)
     % get WAV file for each detection
     iDetWav = NaN(n,1);
     for ii = 1:n
-        detStartii = det_start_absolute(ii);
+        detStartii = detTimes(ii,1);
         iWavii = find(dtWav <= detStartii, 1, 'last');
         if ~isempty(iWavii)
             iDetWav(ii) = iWavii;
@@ -232,14 +196,14 @@ function BAIT_convertLFDCSTable(varargin)
     %FileName = wavFileNames(iDetWav(good_files));
     FileName = wavFileRelPaths(iDetWav(good_files)); % relative paths are needed if files are spread across subfolders
     FileStart = seconds(dtWav(iDetWav(good_files)) - dtRef);
-    SigStart = seconds(det_start_absolute(good_files) - dtRef) - FileStart;
-    SigEnd = seconds(det_end_absolute(good_files) - dtRef) - FileStart;
-    SigStartDateTime = det_start_absolute(good_files);
+    SigStart = seconds(detTimes(good_files,1) - dtRef) - FileStart;
+    SigEnd = seconds(detTimes(good_files,2) - dtRef) - FileStart;
+    SigStartDateTime = detTimes(good_files,1);
     SigStartDateTime.Format = 'dd-MMM-yyyy HH:mm:ss';
     Class_LFDCS = repmat({''},n_good,1);
-    Class_LFDCS(tableLFDCS{good_files,iColSpecies}==9999) = {'Correct'};
-    Class_LFDCS(tableLFDCS{good_files,iColSpecies}==0) = {'Unknown'};
-    Class_LFDCS(tableLFDCS{good_files,iColSpecies}==-9999) = {'Incorrect'};
+    Class_LFDCS(tableLFDCS.ManualSpeciesCode(good_files)==9999) = {'Correct'};
+    Class_LFDCS(tableLFDCS.ManualSpeciesCode(good_files)==0) = {'Unknown'};
+    Class_LFDCS(tableLFDCS.ManualSpeciesCode(good_files)==-9999) = {'Incorrect'};
     Class_MATLAB = Class_LFDCS;
     ReasonForUNK = repmat({''},n_good,1);
     Comments = repmat({''},n_good,1);
