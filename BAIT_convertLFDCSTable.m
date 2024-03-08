@@ -56,7 +56,7 @@ function BAIT_convertLFDCSTable(varargin)
 %
 %
 %   Written by Wilfried Beslin
-%   Last updated 2024-03-06 using MATLAB R2018b
+%   Last updated 2024-03-08 using MATLAB R2018b
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -127,8 +127,9 @@ function BAIT_convertLFDCSTable(varargin)
     % 3) EXTRACT LFDCS DATA ...............................................
     disp('Extracting LFDCS data...')
     
-    % read the LFDCS table
-    [tableLFDCS, detTimes, ~, precisionLoss] = readLFDCSTable(inFilePath);
+    % read the LFDCS autodetections table (filtered as needed)
+    tableFiltParams = rmfield(PARAMS, setdiff(fieldnames(PARAMS),{'ManualSpeciesCodes','AutoCallTypes','StartDateTime','StopDateTime'}));
+    [tableLFDCS, detTimes, ~, precisionLoss] = readLFDCSTable(inFilePath, tableFiltParams);
     
     % Issue a warning if Excel has dropped milliseconds and prompt user for
     % action
@@ -146,23 +147,6 @@ function BAIT_convertLFDCSTable(varargin)
             return
         end
     end
-    
-    % truncate table to include only the species, call type codes, and 
-    % dates of interest
-    rowsInclude = true(height(tableLFDCS),1);
-    %%% manual species codes
-    if ~isnan(PARAMS.ManualSpeciesCodes)
-        rowsInclude = rowsInclude & ismember(tableLFDCS.ManualSpeciesCode,PARAMS.ManualSpeciesCodes);
-    end
-    %%% auto call type codes
-    if ~isnan(PARAMS.AutoCallTypes)
-        rowsInclude = rowsInclude & ismember(tableLFDCS.CallType,PARAMS.AutoCallTypes);
-    end
-    %%% date-time range
-    rowsInclude = rowsInclude & detTimes(:,1) >= PARAMS.StartDateTime & detTimes(:,1) <= PARAMS.StopDateTime;
-    %%% apply filters
-    tableLFDCS = tableLFDCS(rowsInclude,:);
-    detTimes = detTimes(rowsInclude,:);
     
     % get number of filtered detections
     n = height(tableLFDCS);
