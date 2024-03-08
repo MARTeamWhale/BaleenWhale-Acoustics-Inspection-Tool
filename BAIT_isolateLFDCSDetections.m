@@ -74,7 +74,7 @@ function BAIT_isolateLFDCSDetections(varargin)
 %   -----------------------------------------------------------------------
 %
 %   Written by Wilfried Beslin
-%   Last updated 2024-03-06 using MATLAB R2018b
+%   Last updated 2024-03-08 using MATLAB R2018b
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -287,6 +287,22 @@ function PARAMS = loadParams(paramFileInput)
     PARAMS.SpecMaxFreq = readParam(paramsText, 'SpecMaxFreq', {@(var)validateattributes(var,{'numeric'},{'scalar','positive'})});
     PARAMS.SpecColorMap = readParam(paramsText, 'SpecColorMap', {@(var)validateattributes(var,{'char'},{'row'})});
     PARAMS.SpecFigSize = readParam(paramsText, 'SpecFigSize', {@(var)validateattributes(var,{'numeric'},{'numel',2,'integer','positive'})});
+    PARAMS.ManualSpeciesCodes = readParam(paramsText, 'ManualSpeciesCodes', {@(var)validateattributes(var,{'numeric'},{'integer'}), @(var)assert(isnan(var))});
+    PARAMS.AutoCallTypes = readParam(paramsText, 'AutoCallTypes', {@(var)validateattributes(var,{'numeric'},{'integer'}), @(var)assert(isnan(var))});
+    PARAMS.StartDateTime = readParam(paramsText, 'StartDateTime', {@(var)validateattributes(var,{'numeric'},{'numel',6}), @(var)assert(isnan(var))});
+    PARAMS.StopDateTime = readParam(paramsText, 'StopDateTime', {@(var)validateattributes(var,{'numeric'},{'numel',6}), @(var)assert(isnan(var))});
+    
+    % change time parameters to datetime Infs if they are NaNs
+    if isnan(PARAMS.StartDateTime)
+        PARAMS.StartDateTime = datetime('-Inf');
+    else
+        PARAMS.StartDateTime = datetime(PARAMS.StartDateTime);
+    end
+    if isnan(PARAMS.StopDateTime)
+        PARAMS.StopDateTime = datetime('Inf');
+    else
+        PARAMS.StopDateTime = datetime(PARAMS.StopDateTime);
+    end
     
     % assign colormap matrix
     cmaps = buildColormaps();
