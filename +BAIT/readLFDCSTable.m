@@ -1,31 +1,52 @@
-function [tableLFDCS, absDetTimes, usingRelativeTimeFormat, hasPrecisionLoss] = readLFDCSTable(csvFilePath)
+function [tableLFDCS, absDetTimes, usingRelativeTimeFormat, hasPrecisionLoss] = readLFDCSTable(csvFilePath, varargin)
 %
-% Read an LFDCS autodetections CSV file.
-% Variables returned are the following:
+% Read an LFDCS autodetections CSV file as a MATLAB table. May also isolate
+% a subset of the file by applying filters.
 %
+%   INPUT ARGUMENTS
+%   -----------------------------------------------------------------------
+%   "csvFilePath" - char string specifying path to LFDCS autodetections CSV
+%       file
+%   .......................................................................
+%   "filtParams" [OPTIONAL] - struct specifying filtering parameters to 
+%       isolate a subset of the CSV file. Fields must include:
+%           'ManualSpeciesCodes' -> list of manual species codes to include
+%           'AutoCallTypes' -> list of auto call types to include
+%           'StartDateTime' -> earliest occurence time a detection can have
+%           'StopDateTime' -> latest occurrence time a detection can have
+%       To ignore filters, set them to NaN (for species and call type 
+%       codes) or datetime -InF/+Inf (for start and stop date times,
+%       respectively).
+%   -----------------------------------------------------------------------
+%
+%   OUTPUT ARGUMENTS
+%   -----------------------------------------------------------------------
 %   "tableLFDCS" - MATLAB table corresponding to the original data in the
 %       LFDCS CSV file (does not include the header). Variable names have
 %       been added to this table. The names and contents of columns 2 and 3
 %       vary depending on the time format used in the file.
-% 
+%   .......................................................................
 %   "absDateTime" - N-by-2 matrix of detection datetimes, where column 1 
 %       corresponds to start times and column 2 corresponds to stop times.
-%
+%   .......................................................................
 %   "usingRelativeTimeFormat" - true/false value that indicates if the CSV
 %       file describes detection times as seconds relative to 1970/01/01
 %       (true), or as absolute date-times with fractional seconds (false).
-%
+%   .......................................................................
 %   "hasPrecisionLoss" - true/false value indicating if detection times in
 %       this CSV file were rounded by MS Excel or not.
+%   -----------------------------------------------------------------------
 %
 %
 %   Written by Wilfried Beslin
-%   Last updated 2024-03-06 using MATLAB R2018b
+%   Last updated 2024-03-08 using MATLAB R2018b
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     import MUCA.io.importTextFile
     import MUCA.time.isoFormat
+    
+    narginchk(1,2)
 
     % determine number of header lines in LFDCS CSV file
     fileText = importTextFile(csvFilePath);
@@ -81,4 +102,27 @@ function [tableLFDCS, absDetTimes, usingRelativeTimeFormat, hasPrecisionLoss] = 
     
     % check detection times to see if Excel has dropped the milliseconds 
     hasPrecisionLoss = mean(second(absDetTimes(:)) - round(second(absDetTimes(:))) == 0) > 0.8;
+    
+    % identify rows to keep based on filters, if any
+    if nargin > 1
+        filtParams = varargin{1};
+        rowsInclude = true(height(tableLFDCS),1);
+        
+        %%% manual species codes
+        if ~isnan(filtParams.ManualSpeciesCodes)
+            rowsInclude = rowsInclude & ismember(tableLFDCS.ManualSpeciesCode,filtParams.ManualSpeciesCodes);
+        end
+        
+        %%% auto call type codes
+        if ~isnan(filtParams.AutoCallTypes)
+            rowsInclude = rowsInclude & ismember(tableLFDCS.CallType,filtParams.AutoCallTypes);
+        end
+        
+        %%% date-time range
+        rowsInclude = rowsInclude & absDetTimes(:,1) >= filtParams.StartDateTime & absDetTimes(:,1) <= filtParams.StopDateTime;
+    
+        % truncate table
+        tableLFDCS = tableLFDCS(rowsInclude,:);
+        absDetTimes = absDetTimes(rowsInclude,:);
+    end
 end
