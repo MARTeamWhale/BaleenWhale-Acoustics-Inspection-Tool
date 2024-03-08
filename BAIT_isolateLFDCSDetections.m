@@ -195,12 +195,14 @@ function BAIT_isolateLFDCSDetections(varargin)
                 current_rec_start = data.FileStart(ii);
                 det_call_start = data.DetTime(ii);
                 det_call_end = det_call_start + data.DetDur(ii);
+                det_call_type = data.CallType(ii);
 
                 % determine detection start date/time
                 det_dt = current_rec_start + seconds(det_call_start);
 
                 % set output file names and paths
-                out_name = sprintf('%s_Detection_%s',deployment,char(det_dt,'yyyyMMdd_HHmmss'));
+                %out_name = sprintf('%s_Detection_%s',deployment,char(det_dt,'yyyyMMdd_HHmmss'));
+                out_name = sprintf('%s_Detection%s_CallType%02d',deployment,char(det_dt,'yyyyMMdd''T''HHmmss'), det_call_type);
                 clip_file_path = fullfile(output_folders.clips, [out_name,'.wav']);
                 spec_file_path = fullfile(output_folders.specs, [out_name,'.png']);
 
@@ -386,13 +388,14 @@ function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, filt_p
     det_has_file = ~isnan(det_rec_file_idx);
     
     % reorganize and keep useful data
-    data_table_headers = {'FilePath', 'FileStart', 'DetTime', 'DetDur'};
+    data_table_headers = {'FilePath', 'FileStart', 'DetTime', 'DetDur', 'CallType'};
     data_FilePath = rec_file_paths_sorted(det_rec_file_idx(det_has_file));
     data_FileStart = rec_start_times_sorted(det_rec_file_idx(det_has_file));
     data_DetTime = seconds(det_times(det_has_file,1) - rec_start_times_sorted(det_rec_file_idx(det_has_file)));
     data_DetDur = LFDCS_table.Duration(det_has_file);
+    data_CallType = LFDCS_table.CallType(det_has_file);
     
-    data = table(data_FilePath, data_FileStart, data_DetTime, data_DetDur, 'VariableNames',data_table_headers);
+    data = table(data_FilePath, data_FileStart, data_DetTime, data_DetDur, data_CallType, 'VariableNames',data_table_headers);
     
     % determine deployment
     [~, LFDCS_file_name, ~] = fileparts(LFDCS_file_path);
