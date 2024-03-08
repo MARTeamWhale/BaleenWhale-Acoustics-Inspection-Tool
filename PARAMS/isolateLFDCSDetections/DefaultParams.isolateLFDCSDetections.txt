@@ -30,12 +30,12 @@
     SpecColorMap = parula 	# String specifying the colormap for the spectrogram
     SpecFigSize = [960, 540] 	# Width and height of output spectrogram images, in pixels
 
-# SPECIES AND CALL TYPE CODE FILTERS
-# ----------------------------------
+# SPECIES AND CALL TYPE CODES
+# ---------------------------
     ManualSpeciesCodes = [9999, -9999, 0, -32767] 	# Include these species codes that were assigned by user in the LFDCS viewer. Set to NaN to ignore.
     AutoCallTypes = NaN 			# Include these call type codes that were auto-determined by LFDCS. Set to NaN to ignore.
 
-# DATE AND TIME RANGE FILTERS
-# ---------------------------
+# DATE AND TIME RANGE
+# -------------------
     StartDateTime = NaN 				# Limit detections to ones that occur after this date and time. Syntax is [YYYY, MM, DD, hh, mm, ss]. Set to NaN to ignore.
     StopDateTime = NaN 					# Limit detections to ones that occur before this date and time. Syntax is [YYYY, MM, DD, hh, mm, ss]. Set to NaN to ignore.
