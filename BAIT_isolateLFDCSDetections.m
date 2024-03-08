@@ -163,7 +163,8 @@ function BAIT_isolateLFDCSDetections(varargin)
         
         % read LFDCS file
         disp('Processing LFDCS detections...')
-        [data, deployment] = read_LFDCS_file(input_file_path, audio_dir, PARAMS.RecursiveSearch, get_rec_stop_times);
+        table_filt_params = rmfield(PARAMS, setdiff(fieldnames(PARAMS),{'ManualSpeciesCodes','AutoCallTypes','StartDateTime','StopDateTime'}));
+        [data, deployment] = read_LFDCS_file(input_file_path, audio_dir, table_filt_params, PARAMS.RecursiveSearch, get_rec_stop_times);
         if isempty(data)
             disp('Cancelling')
             return
@@ -315,7 +316,7 @@ end
 
 
 % read_LFDCS_file ---------------------------------------------------------
-function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, recursive_search, get_rec_stop_times)
+function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, filt_params, recursive_search, get_rec_stop_times)
 % Extract relevant info from CSV file exported by LFDCS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -328,7 +329,7 @@ function [data, deployment] = read_LFDCS_file(LFDCS_file_path, audio_dir, recurs
     deployment_expr = '^[a-zA-Z0-9]+_\d{4}_\d{2}';
     
     % read LFDCS CSV
-    [LFDCS_table, det_times, ~, precision_loss] = readLFDCSTable(LFDCS_file_path);
+    [LFDCS_table, det_times, ~, precision_loss] = readLFDCSTable(LFDCS_file_path, filt_params);
     num_detections = height(LFDCS_table);
     
     % Issue a warning if Excel has dropped milliseconds and prompt user for
