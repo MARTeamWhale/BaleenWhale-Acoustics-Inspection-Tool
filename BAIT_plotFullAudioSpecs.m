@@ -64,6 +64,24 @@ function BAIT_plotFullAudioSpecs(varargin)
     % import parameters
     PARAMS = loadParams(paramsFileInput);
 
+    % ask user for input folder if not specified
+    if isempty(input_dir)
+        input_dir = uigetdir(pwd, 'Specify input folder of audio files');
+        if isnumeric(input_dir)
+            disp('Cancelling')
+            return
+        end
+    end
+
+    % ask user for output folder if not specified
+    if isempty(output_dir)
+        output_dir = uigetdir(pwd, 'Specify output folder for images');
+        if isnumeric(output_dir)
+            disp('Cancelling')
+            return
+        end
+    end
+
     
     % 2) PROCESSING .......................................................
 
