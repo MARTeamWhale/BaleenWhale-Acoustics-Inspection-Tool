@@ -1,0 +1,26 @@
+###################################################################################################
+#
+# PARAMETER FILE for BAIT_plotFullAudioSpecs
+#
+# These parameters control how spectrogram plots are generated for a full set of WAV files in
+# "BAIT_plotFullAudioSpecs".
+#
+# Template last updated 2025-12-02
+#
+###################################################################################################
+
+
+# INPUT PROCESSING
+#-----------------
+    Channel = 1 		# audio file channel number to use (all audio files must have at least this number of channels)
+    RecursiveSearch = true 	# True/false value specifying if subfolders within the root audio folder should be searched for files too
+
+# SPECTROGRAM IMAGE PROPERTIES
+#-----------------------------
+    SpecFrameDur = 1 		# Duration of STFT frames for spectrogram generation, in seconds
+    SpecStepDur = 0.1 		# Duration of STFT frame advances, in seconds (must be <= SpecFrameDur)
+    SmoothSpec = false 		# True/false value specifying if the spectrogram power values should be smoothed with a Gaussian kernel (as LFDCS does) or not
+    LogFreqs = false 		# True/false values specifying if the frequency axis should use a log scale (true) or linear scale (false)
+    SpecMaxFreq = 400 		# Upper frequency limit of spectrograms, in Hertz
+    SpecColorMap = parula 	# String specifying the colormap for the spectrogram (for a list of colormaps, type "BAIT.buildColormaps" in the MATLAB console)
+    SpecFigSize = [960, 540] 	# Width and height of output spectrogram images, in pixels
